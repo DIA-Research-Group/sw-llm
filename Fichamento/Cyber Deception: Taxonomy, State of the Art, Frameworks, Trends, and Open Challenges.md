@@ -1,0 +1,17 @@
+1. Referência Bibliográfica
+BELTRÁN-LÓPEZ, Pedro; PÉREZ, Manuel Gil; NESPOLI, Pantaleone. Cyber Deception: Taxonomy, State of the Art, Frameworks, Trends, and Open Challenges. IEEE Communications Surveys & Tutorials, vol. 28, 2026.
+
+2. Palavras-chave
+Cibersegurança, ciberengano, honeypot, revisão, defesa ativa, defesa de alvo móvel, modelo de linguagem de grande porte, aprendizagem federada, inteligência artificial.
+
+3. Objetivo
+O estudo visa preencher as lacunas existentes na literatura através de uma revisão detalhada das principais características que compõem o ciberengano, desenvolvendo uma taxonomia de classificação abrangente baseada em abordagem, dimensão, tática, estratégia e técnica. O documento propõe um novo enquadramento integrado impulsionado por inteligência artificial e compara as soluções existentes, com e sem o uso de IA, para identificar tendências predominantes e elencar os desafios pendentes para investigações futuras.
+
+4. Metodologia
+A investigação foi conduzida através de uma revisão sistemática da literatura abrangendo artigos publicados entre 2019 e 2024, utilizando critérios de seleção objetivos baseados em palavras-chave específicas de cibersegurança e restrições a publicações em revistas científicas ou conferências da área de engenharia ou ciência da computação. Posteriormente, aplicaram-se critérios subjetivos, retendo apenas artigos de revistas com fator de impacto superior a dois, o que resultou numa seleção final de 95 artigos após leitura transversal e integral. Estes artigos foram então submetidos a um processo de extração de características e classificados utilizando uma taxonomia de cinco camadas que define a abordagem, a dimensão de aplicação, a tática no ciclo de defesa ou ataque, a estratégia subjacente e a técnica específica utilizada.
+
+5. Resultados
+A análise revelou um foco predominante no desenvolvimento de mecanismos orientados para as táticas de prevenção e deteção, com uma forte dependência da dimensão de rede, deixando lacunas significativas nas capacidades de reação, análise forense e abordagens ofensivas. A técnica Honey-X destacou-se como a mais dominante e versátil entre as soluções analisadas, enquanto a integração de inteligência artificial, maioritariamente através de aprendizagem automática, aprendizagem profunda e aprendizagem por reforço, demonstrou estar ainda em fases iniciais de maturidade tecnológica, situando-se nos níveis dois e três. Constatou-se também que métodos avançados como arquiteturas federadas e modelos generativos permanecem largamente inexplorados neste domínio, sublinhando a necessidade de sistemas de defesa mais dinâmicos, coordenados e adaptáveis em tempo real.
+
+6. Conclusão em relação à pesquisa
+Este documento mapeia o estado da arte e valida a originalidade da topologia de experimentação empírica planeada, uma vez que comprova a escassez de literatura focada na integração de modelos generativos avançados para orquestração e reação dinâmica em tempo real num ambiente de simulação ativa. A identificação de uma lacuna crítica nas táticas de reação e na dimensão aplicacional de sistemas reforça a pertinência de avaliar o desempenho exato de um modelo de linguagem na identificação e mitigação de ameaças provenientes de telemetria agregada. A taxonomia rigorosa aqui apresentada servirá também como matriz para classificar estruturalmente qualquer mecanismo de defesa ativa que venha a ser orquestrado no ambiente de testes conteinerizado.
