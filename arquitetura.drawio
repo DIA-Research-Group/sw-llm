@@ -1,0 +1,69 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Seite-1" id="AOlsw-1iH_zi8xhbwzxp">
+    <mxGraphModel dx="1178" dy="648" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-3" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="-xVEOcAfQwEmllCCKMDD-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="JuiceShop" vertex="1">
+          <mxGeometry height="60" width="120" x="50" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-8" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="-xVEOcAfQwEmllCCKMDD-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-11" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" target="-xVEOcAfQwEmllCCKMDD-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="ELK" vertex="1">
+          <mxGeometry height="60" width="120" x="250" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-6" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="-xVEOcAfQwEmllCCKMDD-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="OpenRouter" vertex="1">
+          <mxGeometry height="80" width="80" x="520" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="LLM" vertex="1">
+          <mxGeometry height="60" width="120" x="500" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-16" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" target="-xVEOcAfQwEmllCCKMDD-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" value="IsolationForest classifier" vertex="1">
+          <mxGeometry height="60" width="120" x="440" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-12" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="-xVEOcAfQwEmllCCKMDD-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-19" edge="1" parent="1" source="-xVEOcAfQwEmllCCKMDD-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;" value="LLM Interface" vertex="1">
+          <mxGeometry height="60" width="120" x="250" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="Recebe notificacao de deteccao, faz a aggregaacao de logs e evia pro OpenRouter" vertex="1">
+          <mxGeometry height="50" width="150" x="250" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="Olha para todos os logs e decide o que eh anomalia" vertex="1">
+          <mxGeometry height="50" width="150" x="570" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-20" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="Guardar:&lt;div&gt;- Prompt&lt;/div&gt;&lt;div&gt;- Log detectado (incluso janela de tempo)&lt;/div&gt;&lt;div&gt;- Resposta gerada&lt;/div&gt;&lt;div&gt;- Numero de tokens&lt;/div&gt;&lt;div&gt;- Modelo usado&lt;/div&gt;&lt;div&gt;- Custos (USD)&lt;/div&gt;&lt;div&gt;- &quot;hints&quot; do JuiceShop&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="170" x="250" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="Remove &quot;hints&quot; do JuiceShop" vertex="1">
+          <mxGeometry height="30" width="170" x="250" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="LLM interface issues:&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;- Ler dados da stack ELK&lt;/div&gt;&lt;div&gt;- Enviar prompts para OpenRouter&lt;/div&gt;&lt;div&gt;- Remover JuiceSop &quot;hints&quot;&lt;/div&gt;&lt;div&gt;- Variacoes possiveis:&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;- modelo utilizado&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;white-space: pre;&quot;&gt;&#x9;&lt;/span&gt;- janela de tempo&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="150" x="90" y="465" as="geometry" />
+        </mxCell>
+        <mxCell id="-xVEOcAfQwEmllCCKMDD-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;fontSize=9;fontColor=#FF3333;" value="Dentro de prompt engineering (augmentation issue #9):&lt;div&gt;- Espicificar forma do resultado, (talvez usando jsonschema)&lt;/div&gt;&lt;div&gt;- Adicionar passos para analisar os logs&lt;/div&gt;&lt;div&gt;- adicionar descricao de skills&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="180" x="40" y="600" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
