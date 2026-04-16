@@ -1,0 +1,74 @@
+services:
+  #Alvo de Teste: Juice Shop
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: juice-shop
+    ports:
+      - "3000:3000"
+    networks:
+      - live_fire_network
+    depends_on:
+      - logstash
+    # Roteamento direto da telemetria para o Logstash via GELF
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "tcp://127.0.0.1:5044"
+        syslog-format: "rfc5424"
+        tag: "juice-shop-telemetry"
+        mode: "non-blocking"
+        max-buffer-size: "4m"
+
+  # Banco de dados de log
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - live_fire_network
+
+  # Pipeline de Ingestão
+  logstash:
+    build:
+      context: ./logstash
+      dockerfile: Dockerfile
+    container_name: logstash
+    ports:
+      - "5044:5044"
+    networks:
+      - live_fire_network
+    depends_on:
+      - elasticsearch
+
+  # Observabilidade visual
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - live_fire_network
+    depends_on:
+      - elasticsearch
+
+  owasp-zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: owasp-zap
+    networks:
+     - live_fire_network
+    depends_on:
+     - juice-shop
+    #Scan completo contra o juice-shop após garantir que ele esteja no ar
+    command: >
+      sh -c "sleep 15 && zap-full-scan.py -t http://juice-shop:3000 -d"
+
+networks:
+  live_fire_network:
+    driver: bridge
