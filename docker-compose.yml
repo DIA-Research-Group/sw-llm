@@ -66,8 +66,8 @@ services:
     depends_on:
      - juice-shop
     #Scan completo contra o juice-shop após garantir que ele esteja no ar
-    command: >
-      sh -c "sleep 15 && zap-full-scan.py -t http://juice-shop:3000 -d"
+    #command: >
+     # sh -c "sleep 15 && zap-full-scan.py -t http://juice-shop:3000 -d"
 
 networks:
   live_fire_network:
