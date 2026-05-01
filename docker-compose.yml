@@ -1,93 +1,104 @@
-    services:
-      # O VIGIA: Proxy Reverso
-      nginx:
-        image: nginx:alpine
-        container_name: nginx-proxy
-        ports:
-          - "80:80"
-        volumes:
-          - ./nginx.conf:/etc/nginx/nginx.conf:ro
-        networks:
-          - live_fire_network
-        depends_on:
-          - juice-shop
-        # Roteamento dos logs de ACESSO para o Logstash
-        logging:
-          driver: syslog
-          options:
-            syslog-address: "tcp://127.0.0.1:5044"
-            tag: "nginx-access"
-    
-      # ALVO: Juice Shop
-      juice-shop:
-        image: bkimminich/juice-shop
-        container_name: juice-shop
-        # A porta 3000 foi removida daqui! Acesso exclusivo via Nginx.
-        networks:
-          - live_fire_network
-        depends_on:
-          - logstash
-        # Roteamento dos logs de SISTEMA/DESAFIOS para o Logstash
-        logging:
-          driver: syslog
-          options:
-            syslog-address: "tcp://127.0.0.1:5044"
-            syslog-format: "rfc5424"
-            tag: "juice-shop-telemetry"
-            mode: "non-blocking"
-            max-buffer-size: "4m"
-    
-      # BANCO DE DADOS
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
-        container_name: elasticsearch
-        environment:
-          - discovery.type=single-node
-          - xpack.security.enabled=false
-          - ES_JAVA_OPTS=-Xms512m -Xmx512m
-        ports:
-          - "9200:9200"
-        networks:
-          - live_fire_network
-    
-      # PIPELINE DE INGESTÃO
-      logstash:
-        build:
-          context: ./logstash
-          dockerfile: Dockerfile
-        container_name: logstash
-        ports:
-          - "5044:5044"
-        networks:
-          - live_fire_network
-        depends_on:
-          - elasticsearch
-    
-      # OBSERVABILIDADE
-      kibana:
-        image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
-        container_name: kibana
-        environment:
-          - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-        ports:
-          - "5601:5601"
-        networks:
-          - live_fire_network
-        depends_on:
-          - elasticsearch
-    
-       #ATACANTE AUTOMATIZADO (Descomente quando quiser gerar os logs de anomalia)
-      owasp-zap:
-        image: ghcr.io/zaproxy/zaproxy:stable
-        container_name: owasp-zap
-        networks:
-          - live_fire_network
-        depends_on:
-          - nginx
-         # Scan completo contra o NGINX para gerar rastros no log
-        command: >
-          sh -c "sleep 15 && zap-full-scan.py -t http://nginx:80 -d"
-    
+services:
+  # Proxy Reverso
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro,z
+      - ./blocklist.conf:/etc/nginx/blocklist.conf:ro,z
     networks:
-      live_fire_network:
-        driver: bridge
+      - live_fire_network
+    depends_on:
+      juice-shop:
+        condition: service_started
+      logstash:
+        condition: service_healthy
+    # Roteamento dos logs de ACESSO para o Logstash
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "tcp://127.0.0.1:5044"
+        tag: "nginx-access"
+        mode: "non-blocking"
+        max-buffer-size: "4m"
+ 
+  # ALVO: Juice Shop
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: juice-shop
+    networks:
+      - live_fire_network
+    depends_on:
+      logstash:
+        condition: service_healthy
+    # Roteamento dos logs de SISTEMA/DESAFIOS para o Logstash
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "tcp://127.0.0.1:5044"
+        syslog-format: "rfc5424"
+        tag: "juice-shop-telemetry"
+        mode: "non-blocking"
+        max-buffer-size: "4m"
+ 
+  # BANCO DE DADOS
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - live_fire_network
+ 
+  # PIPELINE DE INGESTÃO
+  logstash:
+    build:
+      context: ./logstash
+      dockerfile: Dockerfile
+    container_name: logstash
+    ports:
+      - "5044:5044"
+    networks:
+      - live_fire_network
+    depends_on:
+      - elasticsearch
+    # O healthcheck pesquisa a API interna do Logstash.
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-XGET", "http://127.0.0.1:9600"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+ 
+  # OBSERVABILIDADE
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - live_fire_network
+    depends_on:
+      - elasticsearch
+ 
+# ATACANTE AUTOMATIZADO
+  owasp-zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: owasp-zap
+    profiles:
+      - atacante
+    networks:
+      - live_fire_network
+    volumes:
+      - ./:/zap/wrk/:rw,z
+ 
+networks:
+  live_fire_network:
+    driver: bridge

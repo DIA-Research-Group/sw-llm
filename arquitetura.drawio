@@ -67,3 +67,68 @@
     </mxGraphModel>
   </diagram>
 </mxfile>
+2026-04-22 19:28:44.696 [info] Python-envs extension version: 1.28.0
+2026-04-22 19:28:44.696 [info] 
+=== Python Envs Configuration Levels ===
+2026-04-22 19:28:44.696 [info] {
+  "section": "Python Envs Configuration Levels",
+  "defaultEnvManager": {
+    "workspaceFolderValue": "undefined",
+    "workspaceValue": "undefined",
+    "globalValue": "undefined",
+    "defaultValue": "ms-python.python:venv"
+  },
+  "defaultPackageManager": {
+    "workspaceFolderValue": "undefined",
+    "workspaceValue": "undefined",
+    "globalValue": "undefined",
+    "defaultValue": "ms-python.python:pip"
+  }
+}
+2026-04-22 19:28:44.696 [info] [pet] Starting Python Locator /home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/python-env-tools/bin/pet server
+2026-04-22 19:28:44.696 [info] Registering pyenv manager (environments will be discovered lazily)
+2026-04-22 19:28:44.696 [info] Registering pipenv manager (environments will be discovered lazily)
+2026-04-22 19:28:44.696 [info] Registering poetry manager (environments will be discovered lazily)
+2026-04-22 19:28:44.696 [info] [pet] configure: Sending configuration update: {"workspaceDirectories":["/home/rhyan/Code/live-fire-lab"],"environmentDirectories":["/home/rhyan/Code/live-fire-lab/.venv","/home/rhyan/Code/live-fire-lab/*/.venv"],"pipenvExecutable":"pipenv","poetryExecutable":"poetry","cacheDirectory":"/home/rhyan/.config/Code/User/globalStorage/ms-python.vscode-python-envs/pythonLocator"}
+2026-04-22 19:28:45.452 [info] Discovered env: /home/rhyan/Code/live-fire-lab/ia_env/bin/python
+2026-04-22 19:28:45.454 [info] Discovered env: /usr/bin/python
+2026-04-22 19:28:45.454 [info] Discovered env: /usr/bin/python3.12
+2026-04-22 19:28:45.455 [info] Conda not found, turning off conda features. [Error: Conda not found
+	at F (/home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/dist/extension.js:2:598008)
+	at runNextTicks (node:internal/process/task_queues:64:5)
+	at process.processImmediate (node:internal/timers:452:9)
+	at async L (/home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/dist/extension.js:2:598133)
+	at async t.registerCondaFeatures (/home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/dist/extension.js:2:618030)
+	at async t.safeRegister (/home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/dist/extension.js:2:282183)
+	at async Promise.all (index 1)
+	at async Immediate.<anonymous> (/home/rhyan/.vscode/extensions/ms-python.vscode-python-envs-1.28.0-linux-x64/dist/extension.js:2:743851)]
+2026-04-22 19:28:45.457 [info] [interpreterSelection] Applying initial environment selection for 1 workspace folder(s)
+2026-04-22 19:28:45.458 [warning] Broken venv environment detected: Python executable is a broken symlink - {"displayName":null,"name":null,"executable":"/home/rhyan/Code/live-fire-lab/ia_env/bin/python","kind":"Venv","version":"3.11.15","prefix":"/home/rhyan/Code/live-fire-lab/ia_env","manager":null,"project":null,"arch":null,"symlinks":["/home/rhyan/Code/live-fire-lab/ia_env/bin/python"],"error":"Python executable is a broken symlink"}
+2026-04-22 19:28:45.458 [info] Found broken venv environment: ia_env (broken)
+2026-04-22 19:28:45.482 [info] [pet] Telemetry:  {"event":"RefreshPerformance","data":{"refreshPerformance":{"total":81,"breakdown":{"GlobalVirtualEnvs":0,"Locators":55,"Path":80,"Workspaces":9},"locators":{"Conda":33,"Homebrew":0,"LinuxGlobal":54,"PipEnv":0,"Pixi":0,"Poetry":0,"PyEnv":0,"Uv":0,"Venv":0,"VirtualEnv":0,"VirtualEnvWrapper":0}}}}
+2026-04-22 19:28:45.515 [info] [interpreterSelection] live-fire-lab: ia_env (broken) (source: autoDiscovery)
+2026-04-22 19:28:45.518 [info] Python API: Changed environment from undefined to ia_env (broken) for: /home/rhyan/Code/live-fire-lab
+2026-04-22 19:28:45.518 [info] Internal: Changed environment from undefined to ia_env (broken) for: /home/rhyan/Code/live-fire-lab
+2026-04-22 19:28:45.575 [info] [interpreterSelection] global: Python 3.14.3 (source: autoDiscovery)
+2026-04-22 19:28:45.602 [info] Python API: Changed environment from undefined to Python 3.14.3 for: global
+2026-04-22 19:28:45.602 [info] Internal: Changed environment from undefined to Python 3.14.3 for: global
+2026-04-22 19:28:45.612 [info] Refreshing pyenv environments
+2026-04-22 19:28:46.298 [info] Pipenv not found via settings, cache, or PATH
+2026-04-22 19:28:46.298 [info] Refreshing pipenv environments
+2026-04-22 19:28:46.321 [info] Pipenv not found via settings, cache, or PATH
+2026-04-22 19:28:46.321 [info] Found 0 pipenv environments
+2026-04-22 19:28:46.325 [info] Pipenv not found via settings, cache, or PATH
+2026-04-22 19:28:46.381 [info] Refreshing poetry environments
+2026-04-22 19:28:46.396 [info] Poetry executable not found
+2026-04-22 19:28:46.397 [info] Environment discovery complete: 3 environments found (Global: 2, venv: 1)
+2026-04-22 19:29:46.618 [info] Running: uv --version
+2026-04-22 19:29:46.634 [info] Running: /home/rhyan/Code/live-fire-lab/ia_env/bin/python -m pip list
+2026-04-22 19:29:46.635 [error] Error spawning python: Error: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
+2026-04-22 19:29:46.635 [error] Error running pip list Error spawning python: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
+2026-04-22 19:29:46.635 [info] Package list retrieval attempted using pip, action can be done with uv if installed and setting `alwaysUseUv` is enabled.
+2026-04-22 19:29:46.635 [error] Error refreshing packages Error spawning python: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
+2026-04-22 19:31:20.267 [info] Running: /home/rhyan/Code/live-fire-lab/ia_env/bin/python -m pip list
+2026-04-22 19:31:20.268 [error] Error spawning python: Error: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
+2026-04-22 19:31:20.268 [error] Error running pip list Error spawning python: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
+2026-04-22 19:31:20.268 [info] Package list retrieval attempted using pip, action can be done with uv if installed and setting `alwaysUseUv` is enabled.
+2026-04-22 19:31:20.268 [error] Error refreshing packages Error spawning python: spawn /home/rhyan/Code/live-fire-lab/ia_env/bin/python ENOENT
