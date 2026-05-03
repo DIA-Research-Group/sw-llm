@@ -50,11 +50,15 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
     ports:
       - "9200:9200"
     networks:
       - live_fire_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
  
   # PIPELINE DE INGESTÃO
   logstash:
@@ -62,6 +66,8 @@ services:
       context: ./logstash
       dockerfile: Dockerfile
     container_name: logstash
+    environment:
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
       - "5044:5044"
     networks:
@@ -76,17 +82,17 @@ services:
       retries: 10
  
   # OBSERVABILIDADE
-  kibana:
-    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601"
-    networks:
-      - live_fire_network
-    depends_on:
-      - elasticsearch
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+  #   container_name: kibana
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   ports:
+  #     - "5601:5601"
+  #   networks:
+  #     - live_fire_network
+  #   depends_on:
+  #     - elasticsearch
  
 # ATACANTE AUTOMATIZADO
   owasp-zap:
@@ -94,10 +100,17 @@ services:
     container_name: owasp-zap
     profiles:
       - atacante
+    environment:
+      - ZAP_JAVA_OPTS=-Xmx2g
     networks:
       - live_fire_network
     volumes:
       - ./:/zap/wrk/:rw,z
+    command: zap-baseline.py -t http://nginx-proxy:80 -d
+    deploy:
+      resources:
+        limits:
+          memory: 4G
  
 networks:
   live_fire_network:

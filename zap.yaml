@@ -1,0 +1,26 @@
+env:
+  contexts:
+  - excludePaths: []
+    name: baseline
+    urls:
+    - http://nginx-proxy:80
+  parameters:
+    failOnError: true
+    progressToStdout: true
+jobs:
+- parameters:
+    enableTags: false
+    maxAlertsPerRule: 10
+  type: passiveScan-config
+- parameters:
+    maxDuration: 1
+    url: http://nginx-proxy:80
+  type: spider
+- parameters:
+    maxDuration: 0
+  type: passiveScan-wait
+- parameters:
+    format: Long
+    summaryFile: /home/zap/zap_out.json
+  rules: []
+  type: outputSummary
