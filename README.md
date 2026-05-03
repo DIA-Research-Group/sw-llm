@@ -1,53 +1,72 @@
-# 🛡️ Identificação e Reação a Ciberataques com LLMs
+# Autonomic Intrusion Prevention System via Large Language Models (LLM-IPS)
 
-Repositório dedicado à pesquisa científica sobre a viabilidade e eficácia da utilização de Modelos de Linguagem de Grande Porte (LLMs) na análise de logs, identificação de ameaças e resposta automatizada a ataques cibernéticos.
+This repository provides the experimental framework and source code for research regarding the integration of Large Language Models (LLMs) into autonomic security architectures. The project evaluates the efficacy of LLMs in log analysis, threat classification, and automated incident response within a containerized environment.
 
----
+## 1. Research Overview
 
-## 📌 Questão de Pesquisa
+The primary objective of this study is to determine if Large Language Models can be effectively utilized as decision-making engines for automated identification and mitigation of cyber attacks.
 
-**Modelos de linguagem de grande porte podem ser usados de forma eficaz para a identificação e reação automatizada a ataques cibernéticos?**
+### 1.1 Hypotheses
+*   **H1 (Detection Accuracy):** LLMs can precisely distinguish between legitimate traffic and malicious patterns using raw observability data.
+*   **H2 (Entity Identification):** LLMs can accurately extract the source identifiers (e.g., IP addresses) of a threat actor from structured log data.
+*   **H3 (Mitigation Efficacy):** LLMs can formulate and execute network-level mitigation strategies (e.g., dynamic firewall rules) within a time window that minimizes system exposure.
 
----
+## 2. Technical Architecture
 
-## 🧪 Hipóteses
+The experimental environment is composed of a multi-layered infrastructure designed to simulate a modern web application under adversarial conditions:
 
-O escopo da pesquisa busca validar se os LLMs são capazes de atuar ativamente na segurança defensiva, testando as seguintes premissas:
+*   **Target Application:** OWASP Juice Shop, representing a vulnerable microservice architecture.
+*   **Reverse Proxy & Enforcement Point:** Nginx configured with a dynamic blocklist for real-time mitigation.
+*   **Data Ingestion Pipeline:** A Logstash instance that normalizes and forwards system logs to an Elasticsearch cluster.
+*   **Hybrid Detection Engine:** An Isolation Forest algorithm provides first-tier anomaly detection, triggering a second-tier LLM analysis for contextual validation and decision-making.
+*   **Adversarial Agent:** OWASP ZAP (Zed Attack Proxy) configured for exhaustive active scanning and exploit attempts.
 
-1. **Detecção:** LLMs conseguem identificar ataques cibernéticos de forma precisa a partir de dados de observabilidade.
-2. **Rastreabilidade:** LLMs conseguem identificar a origem (vetor ou IP) dos ataques.
-3. **Mapeamento de Impacto:** LLMs conseguem identificar com exatidão a parte do sistema (microsserviço, banco de dados, etc.) que está sob risco.
-4. **Resposta a Incidentes:** LLMs conseguem criar um plano de ação em tempo razoável e executável (ex: gerar comandos para desativar um serviço na AWS ou isolar um contêiner via Docker).
+## 3. Implementation and Reproducibility
 
----
+### 3.1 Prerequisites
+*   Docker and Docker Compose (v2.0+)
+*   Python 3.10 or higher
+*   Valid API Credentials for OpenRouter (or compatible OpenAI-standard endpoint)
 
-## 📊 Variáveis de Análise
+### 3.2 Environment Configuration
+1.  Clone the repository to a local directory.
+2.  Initialize the environment configuration:
+    ```bash
+    cp .env.example .env
+    ```
+3.  Populate the `OPENROUTER_API_KEY` variable in the `.env` file with a valid token.
 
-Para medir o sucesso e a eficiência das hipóteses levantadas, o projeto monitora as seguintes métricas quantitativas:
+### 3.3 Dependency Installation
+It is recommended to use a dedicated Python virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-* **Taxa de Falsos Positivos:** A frequência com que o modelo sinaliza operações legítimas como atividades maliciosas.
-* **Tempo para Identificação:** O tempo decorrido entre o início do ataque simulado e a detecção pelo LLM.
-* **Quantidade de Tokens:** O volume de contexto consumido para analisar os logs e gerar a resposta (impactando diretamente no custo e na latência).
-* **Tempo para Mitigação:** O tempo gasto pelo LLM para formular o plano de ação ou executar o bloqueio da ameaça.
+### 3.4 Execution Workflow
+The experimental lifecycle is orchestrated via the `run.sh` script, which automates environment stabilization, detection activation, adversarial simulation, and data collection.
 
----
+```bash
+chmod +x run.sh
+./run.sh
+```
 
-## 🛠️ Arquitetura e Ambiente de Testes
+The script is configured to run for 600 seconds (10 minutes) per iteration. The target LLM can be modified by updating the `MODELO_IA` variable within the script or the environment.
 
+### 3.5 Data Analysis and Visualization
+Upon completion, performance metrics (latency, token consumption, and mitigation success) are persisted in `resultados/resultados_pesquisa.csv`. To generate the statistical visualizations utilized in the study:
 
+```bash
+python resultados/gerar_graficos.py
+```
 
-Para validar as hipóteses, utilizamos um laboratório de testes que simula um ambiente de produção moderno, submetido a estresse e intrusões controladas:
+## 4. Repository Structure
+*   `IsolationForest/`: Core logic for anomaly detection and LLM integration.
+*   `logstash/`: Ingestion filters and normalization rules.
+*   `resultados/`: Analytical scripts and datasets.
+*   `nginx.conf`: Security gateway configuration.
+*   `run.sh`: Master orchestration script.
 
-### Sistema Alvo
-* Arquitetura de microsserviços.
-* Componentes incluídos: APIs REST, Bancos de Dados (relacionais/NoSQL) e Message Brokers.
-
-### Simulação de Ataques (Red Team)
-* Utilização de softwares de varredura e exploração de vulnerabilidades.
-* Ferramentas ativas: *Nessus Scan*, entre outros scripts de simulação de tráfego malicioso.
-
-### Observabilidade e Coleta de Dados
-* Stack de monitoramento responsável por agregar logs, métricas e rastreamentos do sistema alvo.
-* Estes dados são formatados e utilizados como *prompt context* para a tomada de decisão do LLM.
-
----
+## 5. Ethical Considerations and Licensing
+This software is provided exclusively for academic research. All attack simulations are performed within an isolated network environment. The source code is licensed for open academic reuse.

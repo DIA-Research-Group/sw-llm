@@ -1,0 +1,25 @@
+# Segurança
+.env
+
+# Ambientes Virtuais
+ia_env/
+venv/
+.python-version
+
+# Estado Local / Volátil
+blocklist.conf
+*.log
+
+# Dados e Resultados
+IsolationForest/*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json

@@ -1,0 +1,5 @@
+pandas==2.2.0
+scikit-learn==1.4.0
+elasticsearch==8.12.0
+requests==2.31.0
+python-dotenv==1.0.1
