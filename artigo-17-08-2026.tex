@@ -1,0 +1,438 @@
+\documentclass[sigconf, anonymous]{acmart}
+
+\usepackage[brazilian]{babel}
+\usepackage{acronym}
+\usepackage{float}
+\usepackage{enumitem}
+
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+
+\acmConference[SBES 2026]{40th Brazilian Symposium on Software Engineering}{September 8--11, 2026}{São Paulo, SP, Brazil}
+
+\AtBeginDocument{
+    \providecommand\BibTeX{{Bib\TeX}}
+}
+
+\renewcommand\abstractname{Resumo}
+\renewcommand\keywordsname{Palavras-chave}
+\renewcommand\refname{Referências}
+
+\begin{document}
+
+\title{Reducing LLM Operational Costs in Vulnerability Detection via Hybrid Log Analysis}
+
+\author{FirstName Surname1stAutor}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\author{FirstName Surname}
+\affiliation{
+  \institution{DepartmentName, Institution/UniversityName}
+  \city{City}
+  \country{Country}
+}
+\email{email@email.com}
+
+\renewcommand{\shortauthors}{Surname1stAuthor et al.}
+\renewcommand{\shorttitle}{Reducing LLM Operational Costs via Hybrid Log Analysis}
+
+\acrodef{LLM}{Large Language Model}
+\acrodef{IDS}{Intrusion Detection System}
+\acrodef{IPS}{Intrusion Prevention System}
+\acrodef{SOC}{Security Operations Center}
+\acrodef{iForest}{Isolation Forest}
+\acrodef{API}{Application Programming Interface}
+\acrodef{ACL}{Access Control List}
+\acrodef{JSON}{JavaScript Object Notation}
+
+\begin{abstract}
+A identificação de vulnerabilidades e a reação a ameaças cibernéticas têm desafiado os desenvolvedores de software desde a popularização dos sistemas em rede. Embora múltiplas fontes de dados de telemetria sejam utilizadas para monitorar esses ambientes, os logs de aplicação desempenham um papel particularmente crucial. Avanços recentes em Grandes Modelos de Linguagem (LLMs) permitem a análise semântica automatizada desses logs, facilitando a identificação e o tratamento de ameaças complexas de software. No entanto, embora maiores volumes de dados possam agora ser analisados sem intervenção humana, a incorporação de LLMs introduz gargalos operacionais. Modelos proprietários baseados em nuvem impõem altos custos, enquanto a hospedagem local (\textit{self-hosting}) de LLMs traz desafios complexos de infraestrutura e manutenção. Nesse contexto, este artigo introduz uma solução para a detecção de vulnerabilidades baseada na análise de logs com LLMs. Propomos uma arquitetura que separa a filtragem estatística inicial da análise semântica subsequente para reduzir o volume de dados necessário para o processamento. Nossa abordagem emprega o algoritmo não supervisionado \textit{Isolation Forest} (iForest) para atuar como um filtro preliminar. Aproveitando o princípio de que anomalias são inerentemente raras e distintas, o algoritmo isola explicitamente logs maliciosos e os marca como possíveis anomalias. Estes são então encaminhados a um modelo LLM em janelas de contexto em buffer. Ao encaminhar apenas esse contexto condensado, permitimos que o sistema crie as condições necessárias para que o modelo realize uma análise semântica profunda sem a interferência do ruído gerado por logs de uso normal. Nossos resultados preliminares mostram que a análise estatística usando iForest intercepta com precisão o tráfego anômalo, permitindo descartar a grande maioria dos dados irrelevantes. Ao reduzir a quantidade de dados de entrada para um modelo LLM, diminuímos os custos de uso de API e a latência de processamento.
+
+\vspace{1em}
+
+\selectlanguage{english}
+The identification of vulnerabilities and the reaction to cyber threats have challenged software developers since the popularization of networked systems. While multiple sources of telemetry data are used to monitor these environments, application logs play a particularly crucial role. Recent advances in Large Language Models (LLMs) have enabled automated semantic analysis of these logs, facilitating the identification and handling of complex software threats. However, while larger volumes of data can now be analyzed without human intervention, incorporating LLMs introduces operational bottlenecks. Proprietary cloud-based models impose high API usage costs, whereas self-hosting LLMs brings complex infrastructure and maintenance challenges. In that context, this paper introduces a solution for vulnerability detection based on log analysis with LLMs. We propose an architecture that separates initial statistical filtration from subsequent semantic analysis to reduce the volume of data required for processing. Our approach deploys the unsupervised algorithm Isolation Forest (iForest) to act as a preliminary filter. Leveraging the principle that anomalies are inherently rare and distinct, the algorithm explicitly isolates malicious logs and marks them as possible anomalies. These are then forwarded to an LLM model in buffered context windows. By forwarding only this condensed context, we allow the system to create the necessary conditions for the model to perform deep semantic analysis without the interference of noise generated by normal usage logs. Our preliminary results show that statistical analysis using iForest accurately intercepts anomalous traffic, allowing us to discard the vast majority of irrelevant data. By reducing the amount of input data to an LLM model, we lower API usage costs and processing latency.
+\end{abstract}
+
+\keywords{Large Language Models (LLMs), Inteligência Artificial Híbrida, Aprendizado Não Supervisionado, Detecção de Anomalias, Isolation Forest}
+
+\frenchspacing
+\maketitle
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Introdução}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+O crescimento das redes de comunicação digital e a complexidade topológica dos sistemas baseados em microsserviços resultou em um fluxo massivo de dados referentes a \textit{logs} de aplicação e telemetria de segurança, inviabilizando análises manuais e heurísticas. Historicamente, \acp{IDS} basearam-se em assinaturas estáticas ou em modelos clássicos de aprendizado de máquina para identificar desvios volumétricos no tráfego. Todavia, estas abordagens frequentemente geram taxas elevadas de alarmes falsos e apresentam dificuldades na detecção de ataques inéditos (\textit{zero-day}), uma vez que carecem de compreensão semântica das ameaças \cite{ahmad2021network}.
+
+Para suprir essa limitação, pesquisas recentes propõem a adoção de \acp{LLM} nas operações defensivas de cibersegurança. Com capacidades de raciocínio lógico e processamento de linguagem natural, os \acp{LLM} são capazes de analisar a semântica dos \textit{logs}, correlacionar eventos temporalmente dispersos e classificar táticas de ataque de forma autônoma \cite{qiang2023loggpt, ferrag2023revolutionizing}.
+
+Todavia, integrar \acp{LLM} a esse contexto esbarra em barreiras arquiteturais. O roteamento direto de um fluxo contínuo de \textit{logs} brutos para um \ac{LLM} gera sobrecarga computacional, limitação de janelas de contexto (\textit{token limits}) e custos elevados de \ac{API} \cite{qiang2023loggpt}. A injeção de grandes volumes de tráfego ordinário no contexto do modelo dilui a atenção do sistema, degradando a precisão e aumentando a latência de resposta \cite{yao2024llmsecurity, wu2023privacy}.
+
+Diante desse cenário, o custo elevado do uso das APIs emerge como barreira crítica para a viabilidade de um SOC autônomo. Soluções arquiteturais híbridas e hierárquicas oferecem um caminho viável para contornar essa limitação, haja vista que o consenso na literatura estabelece que algoritmos de baixo custo computacional devem operar localmente como primeira linha de defesa \cite{ferrag2023revolutionizing}, servindo como triagem para que apenas comportamentos anômalos sejam submetidos aos \acp{LLM}.
+
+Este artigo segue nesta linha ao propor uma arquitetura híbrida em camadas para detecção e prevenção de intrusões. A solução emprega o \ac{iForest} como filtro estatístico primário executado localmente. As anomalias isoladas são agregadas em janelas temporais e enviadas para análise semântica via \ac{API}. O \ac{LLM} não apenas detecta a ameaça, mas atua como agente orquestrador, identificando a origem do ataque e acionando regras de \textit{firewall} dinâmicas. Os experimentos realizados indicam que essa topologia híbrida reduz o consumo de \textit{tokens} e de chamadas de \ac{API} em comparação com a ingestão direta de todo o tráfego.
+
+O restante deste artigo está estruturado da seguinte forma. A Seção~\ref{sec:relacionados} revisa os trabalhos relacionados. A Seção~\ref{sec:solucao} apresenta a arquitetura da solução proposta, incluindo a fundamentação do filtro estatístico. A Seção~\ref{sec:metodologia} descreve a metodologia experimental, abrangendo a infraestrutura de servidor e o ambiente de simulação. Por fim, a Seção~\ref{sec:resultados} apresenta os resultados experimentais e discute a eficácia da abordagem.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Trabalhos Relacionados}
+\label{sec:relacionados}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+A aplicação de inteligência artificial em cibersegurança tem evoluído de abordagens puramente estatísticas para a adoção de modelos generativos. Para situar a contribuição desta pesquisa, revisamos a literatura sob três eixos fundamentais: métodos de detecção de anomalias, adoção de \acp{LLM} em cibersegurança e estratégias híbridas para otimização operacional.
+
+\subsection{Detecção de Anomalias e o Uso de Isolation Forest}
+Historicamente, a detecção de ameaças baseou-se em métodos clássicos de aprendizado de máquina. Ahmad et al.~\cite{ahmad2021network} evidenciaram que \acp{IDS} fundamentados exclusivamente em limiares estatísticos sofrem com altas taxas de falsos positivos em cenários reais. Em contrapartida, abordagens supervisionadas oferecem maior precisão, mas elevam substancialmente os custos de implementação, agravados pela escassez de \textit{datasets} rotulados. Nesse contexto, o \textit{Isolation Forest} (iForest) tem se destacado~\cite{alhumaima2026comprehensive, maspo2026anomaly} pela eficácia no isolamento de ataques volumétricos. Sua escolha justifica-se pela capacidade de operar em tempo linear sobre dados de alta dimensionalidade. Além disso, baseia-se na premissa fundamental de que anomalias são instâncias raras e estruturalmente distintas, o que viabiliza a triagem ágil de eventos \textit{zero-day}. Contudo, filtros estatísticos isolados, por não possuírem compreensão contextual das requisições, frequentemente falham ao distinguir anomalias benignas de explorações sofisticadas.
+
+\subsection{Modelos de Linguagem na Análise de Logs}
+Essa lacuna contextual motivou a busca por métodos capazes de compreender a intenção por trás da telemetria. Qiang et al.~\cite{qiang2023loggpt} propuseram o LogGPT, um \textit{framework} que aplica \acp{LLM} para extração de padrões e detecção de anomalias em \textit{logs}, demonstrando que a inteligência generativa supera modelos clássicos na interpretação semântica de incidentes. Na mesma linha, Cai et al.~\cite{cai2025llm} desenvolveram o LLMLogAnalyzer, integrando técnicas de clusterização para sumarizar registros de segurança, enquanto Liao et al.~\cite{liao2024llmsoc} introduziram o LLM-SOC, empregando o \ac{LLM} como um agente orquestrador autônomo.
+
+Mais recentemente, Yanguema \& Yin~\cite{yanguema_sentinel} propuseram o Sentinel AI, uma arquitetura de motor duplo que combina \textit{Isolation Forest} para filtragem em tempo real com o Google Gemini Pro para raciocínio semântico, alcançando um F1-score de 93\% em cenários de \textit{zero-day}. De forma similar, um \textit{framework} recente para redes IoT~\cite{iot_framework} emprega \textit{Isolation Forest} e \textit{Random Forest} para detecção de anomalias, utilizando o GPT-4o-mini para gerar explicações legíveis e pontuar riscos, reduzindo a dependência de operadores especializados.
+
+Embora estas soluções comprovem o potencial analítico das \acp{LLM} na segurança defensiva, a transição para ambientes em tempo real expõe limitações críticas. A ingestão direta de um grande volume de \textit{logs} degrada a \textit{performance} devido aos limites da janela de contexto, aumenta o risco de vazamento de dados sensíveis e exposição a injeções de \textit{prompt}~\cite{wu2023privacy, yao2024llmsecurity}, além de gerar custos proibitivos de chamadas de \ac{API}~\cite{ferrag2023revolutionizing}.
+
+\subsection{Abordagens Híbridas e Otimização Operacional}
+Para contornar os gargalos da ingestão direta, a literatura recente aponta para soluções arquiteturais em camadas. Trabalhos como os de Ferrag et al.~\cite{ferrag2023revolutionizing} e Mills et al.~\cite{mills2024hybrid} indicam que sistemas de baixo custo computacional devem operar localmente como primeira linha de defesa, atuando como um ``funil'' de dados. Al-Hammouri et al.~\cite{al-hammouri2025hybrid} reforçam que a combinação de modelos tradicionais com \acp{LLM} é o caminho mais viável para cenários de detecção de ameaças inéditas sem sacrificar a latência, demonstrando um aumento de 6,3\% na acurácia e redução de 9\% nos falsos positivos ao integrar GPT-2 com métodos baseados em assinatura.
+
+Nesse sentido, arquiteturas híbridas têm sido exploradas em diferentes domínios. Jamshidi et al.~\cite{jamshidi_ecodefender} propuseram o EcoDefender, um \textit{framework} que combina \textit{Autoencoder} com \textit{Isolation Forest} para detecção de anomalias em \textit{edge gateways} de IoT, alcançando 94\% de acurácia com latência de apenas 27\,ms e 30\% menos consumo energético. Em um contexto de segurança industrial (IIoT), uma abordagem híbrida recente~\cite{iiot_hybrid} integra \textit{Isolation Forest} com um classificador \textit{stacked ensemble} (XGBoost, Random Forest, Extra Trees e MLP), atingindo 97\% de acurácia no \textit{dataset} UNSW-NB15, com suporte de técnicas de explicabilidade (SHAP e LIME) para transparência nas decisões.
+
+O presente trabalho avança sobre o estado da arte ao unificar esses conceitos em uma arquitetura \ac{IPS} aplicável à Camada 7, responsável por operar a nível de aplicação no modelo OSI. O sistema é, portanto, capaz de intervir diretamente no mesmo nível das requisições web (como tráfego HTTP), interpretando o comportamento do usuário e não apenas pacotes de rede. Diferente das soluções que delegam toda a carga cognitiva à nuvem, como o Sentinel AI e o \textit{framework} IoT mencionados, nossa abordagem restringe o \ac{LLM} ao papel de analista sênior, enquanto o \ac{iForest} atua como filtro preliminar agressivo. Além disso, enquanto a maioria das arquiteturas híbridas existentes atua apenas como \ac{IDS} (detecção), nossa solução incorpora um mecanismo de prevenção (\ac{IPS}) ativo, atualizando dinamicamente a \ac{ACL} do \textit{proxy} reverso para bloquear IPs maliciosos de forma automatizada. Esse \textit{design} preserva a acurácia semântica das ferramentas generativas, ao mesmo tempo que mitiga os altos custos operacionais relatados na literatura, facilitando o uso contínuo de \acp{LLM} na proteção de \textit{endpoints}.
+
+\begin{table}[htpb]
+\centering
+\caption{Comparativo entre a solução proposta e os trabalhos relacionados.}
+\label{tab:comparativo_relacionados}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Trabalho} & \textbf{\begin{tabular}[c]{@{}c@{}}Triagem\\ Estatística\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Análise\\ Semântica\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Otimização\\ de Custo API\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Mitigação\\ Ativa (IPS)\end{tabular}} \\ \midrule
+LogGPT \cite{qiang2023loggpt} & $\times$ & \checkmark & $\times$ & $\times$ \\
+LLMLogAnalyzer \cite{cai2025llm} & $\times$ & \checkmark & $\times$ & $\times$ \\
+LLM-SOC \cite{liao2024llmsoc} & $\times$ & \checkmark & $\times$ & \checkmark \\
+Alhumaima et al. \cite{alhumaima2026comprehensive} & \checkmark & $\times$ & \checkmark & $\times$ \\ \midrule
+\textbf{Nossa Abordagem} & \textbf{\checkmark} & \textbf{\checkmark} & \textbf{\checkmark} & \textbf{\checkmark} \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Arquitetura da Solução Proposta}
+\label{sec:solucao}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+A solução baseia-se em uma arquitetura híbrida que divide a análise de intrusão em duas camadas funcionais: uma triagem estatística local (Camada 1) e uma validação semântica remota (Camada 2)~\cite{al-hammouri2025hybrid, mills2024hybrid}. Essa divisão constitui o núcleo conceitual da proposta e é agnóstica à tecnologia subjacente, ou seja, independente do protocolo de origem dos \textit{logs}, do mecanismo de transporte e indexação, ou do dispositivo de rede responsável pela mitigação. A Figura~\ref{fig:arquitetura} ilustra o fluxo lógico de dados desde a captação até a resposta ao incidente; os componentes concretos utilizados para instanciar esse fluxo no protótipo experimental são descritos na Seção~\ref{sec:metodologia_ambiente}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/diagrama_arquitetura.jpeg}
+    \caption{Fluxo de dados da arquitetura híbrida de detecção de intrusão em camadas.}
+    \label{fig:arquitetura}
+\end{figure}
+
+O fluxo operacional é estruturado nas seguintes etapas:
+
+\begin{enumerate}[label=\alph*.]
+    \item \textbf{Ingestão de Dados:} A arquitetura exige que a fonte de telemetria produza registros estruturados que possam ser consultados de forma incremental e com baixa latência, contendo atributos numéricos associados ao comportamento da requisição, como código de resposta, tempo de processamento e volume de dados retornado (Tabela~\ref{tab:features}). O mecanismo específico de captação, transporte e indexação utilizado na validação experimental é detalhado na Seção~\ref{sec:metodologia_ambiente}.
+    
+    \item \textbf{Camada 1 — Triagem Estatística:} Um componente consumidor monitora continuamente a fonte de dados, extrai os atributos numéricos-alvo de cada evento e os submete ao algoritmo de triagem (\ac{iForest}, detalhado na Seção~\ref{sec:iforest}). O filtro opera de forma leve e não supervisionada, registros cujo \textit{score} de predição indica tráfego legítimo são descartados imediatamente, e apenas os eventos sinalizados como anômalos avançam para a camada seguinte. Essa primeira camada constitui a principal fonte de contenção de custos da arquitetura.
+    
+    \item \textbf{Camada 2 — Análise Semântica e Mitigação Automatizada:} Os eventos sinalizados como anômalos na Camada 1 são agregados em uma janela de contexto temporal e encaminhados, via chamada de \ac{API}, a um \ac{LLM}. O sistema exige, por meio do \textit{prompt} de sistema, que o modelo retorne exclusivamente um objeto estruturado (\ac{JSON}) identificando a origem do ataque. Ao receber esse veredito, um módulo de resposta automatizada atualiza a política de controle de acesso na camada de rede, isolando o atacante sem interromper a disponibilidade do sistema. O \ac{LLM} atua, portanto, não apenas como classificador, mas como agente orquestrador da resposta ao incidente. Os componentes concretos empregados para realizar essa comunicação e essa mitigação no protótipo são descritos na Seção~\ref{sec:metodologia_ambiente}.
+\end{enumerate}
+
+\begin{table}[htbp]
+\caption{Atributos extraídos dos registros Nginx para o \ac{iForest}.}
+\label{tab:features}
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Atributo} & \textbf{Descrição} \\
+\midrule
+\texttt{status} & Código de resposta HTTP \\
+\texttt{request\_time} & Tempo de resposta em segundos \\
+\texttt{body\_bytes\_sent} & Volume de dados retornados (bytes) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Em síntese, a orquestração dessas três etapas consolida a arquitetura híbrida proposta. Enquanto o \textit{pipeline} de ingestão e a triagem estatística atuam como um mecanismo de contenção volumétrica e otimização de custos, a camada semântica garante a precisão cognitiva e a resposta ativa. É essa sinergia modular que viabiliza a operação de um \ac{IPS} autônomo, conciliando o poder analítico dos \acp{LLM} com as rigorosas restrições operacionais e financeiras de um ambiente de produção em tempo real.
+
+\subsection{Filtro Estatístico: Isolation Forest}
+\label{sec:iforest}
+
+O \ac{iForest}~\cite{liu2008isolation} foi selecionado como algoritmo de triagem primária por operar de forma não supervisionada sobre fluxos de dados não rotulados. O algoritmo constrói árvores de decisão aleatórias (\textit{iTrees}) com base na premissa de que instâncias anômalas são estatisticamente raras e estruturalmente distintas, sendo isoladas em caminhos de menor profundidade em relação ao tráfego benigno. Sua complexidade de tempo linear $\mathcal{O}(n)$ permite o processamento de volumes de telemetria de larga escala sem impacto na latência da triagem. Trabalhos recentes corroboram sua eficácia no isolamento de ataques volumétricos e tráfego de rede anômalo~\cite{alhumaima2026comprehensive, maspo2026anomaly}.
+
+Para uma instância $x$, o comprimento do caminho de isolamento $h(x)$ é definido pelo número de arestas percorridas da raiz até a folha correspondente. O escore de anomalia $s(x, n)$ é calculado como:
+
+$$s(x, n) = 2^{-\frac{E(h(x))}{c(n)}}$$
+
+onde $E(h(x))$ é o valor esperado do comprimento do caminho sobre todas as árvores da floresta e $c(n)$ é o comprimento médio esperado para normalização. Valores de $s$ próximos a $1$ (ou escores de decisão negativos na implementação utilizada) indicam alta probabilidade de anomalia e acionam a Camada 2 da arquitetura. Os hiperparâmetros utilizados na instanciação experimental do modelo são detalhados na Seção~\ref{sec:metodologia_procedimento}.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Metodologia de Avaliação}
+\label{sec:metodologia}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+A arquitetura proposta foi submetida a um ambiente de simulação controlado (\textit{testbed}), projetado para emular as condições de um sistema em produção operando sob carga ativa de ataques cibernéticos. O objetivo primário desta etapa foi mensurar o custo-benefício e a viabilidade operacional da delegação de decisões de bloqueio para diferentes modelos de linguagem após a filtragem estatística.
+
+\subsection{Ambiente de Simulação (\textit{Testbed})}
+\label{sec:metodologia_ambiente}
+
+O experimento foi executado localmente em uma máquina física equipada com processador AMD Ryzen 7 6800H e 16\,GB de memória RAM. Todos os serviços foram conteinerizados e executados nesse mesmo \textit{host}, garantindo o isolamento da rede externa para evitar flutuações de latência não relacionadas à comunicação com as \acp{API} dos \acp{LLM}.
+
+Para simular o ecossistema vulnerável, adotou-se como alvo a aplicação OWASP Juice Shop, um sistema amplamente padronizado e reconhecido na literatura acadêmica e na indústria para a validação empírica de ferramentas de segurança. Para submeter a aplicação a um estresse realista e volumétrico, integrou-se a ferramenta OWASP ZAP configurada no modo de varredura ativa (\textit{Active Scan}). Essa configuração injetou um fluxo contínuo de cargas maliciosas (\textit{payloads}), requisições anômalas e tentativas de exploração de vulnerabilidades diretamente contra o sistema alvo.
+
+\subsection{Procedimento Experimental e Métricas}
+\label{sec:metodologia_procedimento}
+
+O procedimento de validação consistiu na execução de uma janela de monitoramento ininterrupto de 10 minutos sob varredura ativa extrema do OWASP ZAP. Durante este período, o tráfego foi capturado e processado pelo \textit{pipeline} de detecção proposto. 
+
+Para garantir a reprodutibilidade do experimento, a instância do \ac{iForest} foi parametrizada com os seguintes hiperparâmetros, definidos com base nas recomendações da literatura e em testes preliminares de sensibilidade:
+
+\begin{table}[htbp]
+\centering
+\caption{Hiperparâmetros do \textit{Isolation Forest} utilizados no experimento.}
+\label{tab:iforest_params}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parâmetro} & \textbf{Valor} \\
+\midrule
+\texttt{n\_estimators} & 100 \\
+\texttt{contamination} & \texttt{'auto'} \\
+\texttt{max\_samples} & \texttt{'auto'} \\
+\texttt{random\_state} & 42 \\
+\texttt{bootstrap} & \texttt{False} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A escolha por \texttt{contamination='auto'} permite que o algoritmo estime a proporção de anomalias com base na distribuição dos \textit{scores} de isolamento, enquanto o \texttt{random\_state} fixo assegura que os cortes aleatórios das árvores sejam reproduzíveis em execuções futuras.
+
+\subsection{Modelos de Linguagem e Projeção de Custos}
+\label{sec:cost_proj}
+
+A validação semântica foi executada de forma comparativa utilizando três modelos de linguagem proeminentes no mercado: GPT-4o-mini, Gemini 2.5 Flash Lite e Claude 3.5 Haiku. A seleção baseou-se na disponibilidade comercial via \ac{API} e no foco destas versões em custo reduzido e velocidade de inferência, atributos fundamentais para a viabilidade de um \ac{IPS} em tempo real. A Tabela~\ref{tab:modelos} sintetiza as características destes modelos.
+
+\begin{table}[htbp]
+\caption{Modelos avaliados e características de mercado.}
+\label{tab:modelos}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{Provedor} & \textbf{Custo Estimado} & \textbf{Contexto} \\
+                &                  & (USD/1M tok.)           & (tokens)          \\
+\midrule
+GPT-4o-mini          & OpenAI    & \$0,15 & 128k \\
+Gemini 2.5 Flash Lite & Google   & \$0,15 & 1M   \\
+Claude 3.5 Haiku     & Anthropic & \$0,80 & 200k \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O \textit{prompt} enviado à \ac{API} foi mantido fixo durante todo o experimento, projetado especificamente para viabilizar a automação completa do bloqueio. O \textit{prompt} é composto por duas mensagens: na primeira, define-se a \textit{persona} do modelo como um ``Analista de Segurança Autonômico'' e impõe-se a restrição de que a saída deve ser exclusivamente um objeto \ac{JSON}, proibindo qualquer comentário ou texto adicional. O formato de resposta exigido contém dois campos obrigatórios: \texttt{"ataque\_detectado"} (booleano) e \texttt{"ip\_alvo\_bloqueio"} (\textit{string} ou \texttt{"N/A"}). Isso assegura que o \textit{output} produzido tenha uma estrutura constante e de fácil entendimento pela máquina. A segunda mensagem envia os dados em uma lista \ac{JSON} com os \textit{logs} que o \ac{iForest} sinalizou como anômalos, limitada a um lote de até 50 entradas para otimizar o consumo de \textit{tokens} e a latência. Essa estratégia de \textit{output formatting} dispensa intervenção humana, permitindo que o \textit{script} aplique imediatamente as regras na \ac{ACL} assim que a resposta é recebida.
+
+\subsection{Métricas de Avaliação}
+\label{sec:aval_metrics}
+
+Para avaliar a eficácia do sistema de forma objetiva, três métricas foram monitoradas e catalogadas:
+
+\begin{enumerate}[label=(\roman*)]
+    \item \textbf{Acurácia de Identificação:} mensurou a precisão com que o \ac{LLM} conseguiu extrair o endereço IP correto do atacante em meio à janela de contexto enviada, sem incorrer em falsos positivos (ex.: bloqueio de tráfego benigno ou de componentes internos da infraestrutura).
+    \item \textbf{Latência de Decisão:} registrou o intervalo temporal de ida e volta (\textit{Round-Trip Time}), medido em segundos, desde o acionamento da \ac{API} com o contexto condensado até o recebimento completo do objeto \ac{JSON} contendo o veredito de bloqueio. Esta métrica engloba o trânsito em rede pública, o processamento nos \textit{gateways} dos provedores e o tempo de inferência do modelo.
+    \item \textbf{Consumo de \textit{Tokens}:} quantificou o volume absoluto de \textit{tokens} processados e faturados pelos respectivos provedores. Com base nessa métrica, projetou-se o impacto financeiro de cada abordagem. Por exemplo, para o GPT-4o-mini, uma submissão bruta de todos os 20.000 \textit{logs} consumiria cerca de 1,7 milhão de \textit{tokens}, custando aproximadamente US\$ 0,25 por janela de 10 minutos. Já com a filtragem do iForest, o consumo reduziu-se para $\sim$166 mil \textit{tokens} (custo de US\$ 0,025), representando uma economia de mais de 90\% em chamadas de \ac{API}, diferença que, projetada para um cenário de 24 horas, equivale a uma redução de cerca de US\$ 33 por dia.
+\end{enumerate}
+
+Ressalta-se que, por se tratar de um estudo de viabilidade (\textit{proof-of-concept}) em ambiente controlado, o foco principal da análise recai sobre as métricas de gargalo operacional (custo e latência), uma vez que a varredura ativa do ZAP contra o Juice Shop produz anomalias com alto contraste semântico. A avaliação da eficácia em cenários com ataques furtivos (\textit{Low and Slow}) e tráfego ruidoso é delineada como trabalho futuro na Seção~\ref{sec:conclusao}.
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Resultados e Discussão}
+\label{sec:resultados}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+Os resultados a seguir foram obtidos a partir da execução do \textit{testbed} sob carga ativa de ataque. A avaliação mensurou quatro métricas: conformidade estrutural da resposta, distribuição de latência de decisão, resiliência ao volume de contexto e eficiência de processamento por \textit{tokens}.
+
+\subsection{Conformidade da Resposta e Acurácia de Identificação}
+
+A arquitetura foi avaliada em ciclos independentes de 10 minutos para cada provedor. Variações intrínsecas da infraestrutura de rede e a natureza dinâmica da injeção de cargas pelo OWASP ZAP resultaram em pequenas divergências no número total de agregações anômalas interceptadas e remetidas pela Camada 1 para cada modelo (39 para o GPT-4o-mini, 36 para o Gemini 2.5 Flash Lite e 34 para o Claude 3.5 Haiku). 
+
+Em todas essas ocorrências processadas, os três modelos identificaram corretamente o endereço IP de origem da ameaça, sem incidência de falsos positivos sobre o tráfego interno da infraestrutura. Adicionalmente, todos mantiveram adesão estrita à estrutura \ac{JSON} exigida no \textit{system prompt}, o que validou tecnicamente a viabilidade de aplicar regras de \ac{ACL} no \textit{proxy} de forma automatizada, sem quebras de contrato (\textit{parsing errors}).
+
+A alta acurácia observada é coerente com a natureza agressiva da varredura ativa do ZAP, que gera requisições com assinaturas claramente anômalas (ex.: \textit{payloads} de SQLi, comandos de sistema, alterações de \textit{User-Agent}). Em um cenário de produção, onde o tráfego legítimo é ruidoso e ataques furtivos não produzem desvios estatísticos imediatos, espera-se uma taxa maior de falsos positivos e negativos. Portanto, os resultados aqui reportados devem ser interpretados como um limite superior do desempenho da arquitetura, servindo como prova de conceito para a viabilidade de redução de custos. A avaliação em cenários complexos visando delinear os limiares de erro do modelo será abordada na Seção~\ref{sec:conclusao}.
+
+\subsection{Distribuição de Latência de Decisão}
+
+A latência de decisão é a métrica determinante para a viabilidade operacional de um \ac{IPS} em tempo real. Importante ressaltar que a métrica reportada engloba o tempo de trânsito na rede pública, o roteamento nos \textit{gateways} dos provedores e o tempo de inferência isolado do modelo. Essa abordagem RTT foi preservada intencionalmente, pois, no contexto de proteção cibernética, o que determina o sucesso da defesa é o atraso real fim a fim vivenciado pelo servidor antes do bloqueio. A Figura~\ref{fig:boxplot_latencia} apresenta a dispersão dessa métrica.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/Boxplot_Latencia.png}
+    \caption{Distribuição da latência de decisão (RTT) entre os modelos avaliados.}
+    \label{fig:boxplot_latencia}
+\end{figure}
+
+O GPT-4o-mini registrou a menor latência média (1,67~s), seguido pelo Gemini 2.5 Flash Lite (2,15~s) e pelo Claude 3.5 Haiku (2,66~s). O Claude apresentou distribuição mais concentrada, sem ocorrências de \textit{outliers} severos, indicando maior previsibilidade. O Gemini, por sua vez, registrou \textit{outliers} de até 6,0~s, possivelmente devido a flutuações de tráfego da \ac{API} externa no momento da validação.
+
+A Figura~\ref{fig:cdf_latencia} apresenta a Função de Distribuição Acumulada (CDF), evidenciando a cobertura temporal.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/Latencia.png}
+    \caption{Função de Distribuição Acumulada (CDF) da latência por modelo.}
+    \label{fig:cdf_latencia}
+\end{figure}
+
+O GPT-4o-mini processou 90\% das anomalias em menos de 2,13~s. O Claude 3.5 Haiku atingiu o mesmo percentil em 3,01~s e o Gemini 2.5 Flash Lite em 3,52~s. O fato de as medianas de todos os modelos estarem situadas abaixo do limiar de 3~s corrobora a capacidade da arquitetura em agir de forma responsiva contra injeções automatizadas contínuas.
+
+\subsection{Resiliência ao Volume de Contexto}
+
+A Figura~\ref{fig:scatter_tokens} plota a relação empírica entre o volume de contexto contabilizado pelas APIs (em \textit{tokens}) e a latência de resposta observada.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/Scatter_Tokens.png}
+    \caption{Relação entre o volume de contexto (Tokens) e o tempo de resposta.}
+    \label{fig:scatter_tokens}
+\end{figure}
+
+Visualmente, os grupos formam \textit{clusters} verticais distintos: o Gemini frequentemente reportou faturamentos superiores a 6.000 \textit{tokens}, enquanto o GPT concentrou-se próximo de 4.000, mesmo para pacotes de \textit{logs} equivalentes. Essa dispersão no eixo horizontal não reflete uma assimetria na injeção de dados, mas sim a diferença inerente à arquitetura dos \textit{tokenizers} de cada empresa.
+
+A ausência de correlação linear forte entre tamanho de contexto e latência, nesta faixa de testes, sugere que o gargalo temporal decorre primordialmente do \textit{overhead} de rede e alocação da infraestrutura em nuvem, ofuscando o peso do processamento sintático puro do \textit{prompt}.
+
+\subsection{Eficiência Arquitetural e Impacto no Consumo de \textit{Tokens}}
+
+Para avaliar o impacto da triagem primária (Camada 1) no consumo final de recursos, projetou-se um \textit{baseline} — denominado \textit{LLM Puro} — no qual 100\% do tráfego avaliado seria roteado diretamente à \ac{API}. A Figura~\ref{fig:eficiencia_hibrida} ilustra esse choque comparativo.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/CBSoft_Fig5_Eficiencia_Hibrida.png}
+    \caption{Comparativo de eficiência: abordagem bruta vs.\ arquitetura híbrida.}
+    \label{fig:eficiencia_hibrida}
+\end{figure}
+
+Tomando a bateria de 20.000 requisições do ZAP como referência, uma abordagem bruta consumiria estimados 1,7 milhão de \textit{tokens} distribuídos em mais de 400 chamadas contínuas, violando limitações comerciais de taxa (\textit{rate limits}). Sob a mesma carga, o filtro \ac{iForest} isolou com sucesso as matrizes suspeitas, engatilhando apenas 39 chamadas (no run do GPT-4o-mini) e totalizando pouco mais de 166 mil \textit{tokens}. A redução de mais de 90\% na ingestão comprova a premissa de contenção operacional.
+
+A Tabela~\ref{tab:custo_projecao} consolida a projeção financeira para um cenário de operação contínua de 24 horas, considerando os custos de \ac{API} reportados na Tabela~\ref{tab:modelos}. Os valores evidenciam que, mesmo para o modelo mais caro (Claude 3.5 Haiku), a arquitetura híbrida reduz o custo diário projetado de US\$ 177,12 para aproximadamente US\$ 19,15, uma expressiva margem de economia. Para os modelos de menor custo (GPT-4o-mini), a economia projetada chega à casa de US\$ 33,12 por dia, tornando viável a adoção contínua de LLMs em \acp{SOC} sem comprometer o orçamento. Essa redução expressiva decorre da triagem agressiva do \ac{iForest}, que descarta a vasta maioria dos \textit{logs} antes da análise semântica, confirmando que o investimento computacional local no filtro estatístico é amplamente compensado pela economia em chamadas de \ac{API}. 
+
+\begin{table}[htbp]
+\centering
+\caption{Projeção de custos operacionais para um cenário de 24 horas.}
+\label{tab:custo_projecao}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{Custo (Bruto)} & \textbf{Custo (Filtrado)} & \textbf{Economia Diária} \\
+\midrule
+GPT-4o-mini      & \$0,26 & \$0,03 & \$33,12 \\
+Gemini 2.5 Flash Lite & \$0,26 & \$0,04 & \$31,68 \\
+Claude 3.5 Haiku & \$1,36 & \$0,13 & \$177,12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Para uma normalização justa dos custos perante as diferentes contagens de chamadas e algoritmos de decodificação observados, a Figura~\ref{fig:tokens_por_log} extrai a média de \textit{tokens} faturada para um mesmo evento unitário Nginx no formato \ac{JSON}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{images/Tokens_Por_Log.png}
+    \caption{Eficiência média de tokenização por evento.}
+    \label{fig:tokens_por_log}
+    \vspace{-2mm}
+\end{figure}
+
+Nota-se que o Gemini consumiu aproximadamente 129 \textit{tokens} por \textit{log}, frente a apenas 91 do GPT-4o-mini. A longo prazo, essa variação algorítmica implica em um consumo de \textit{tokens} (e consequente custo financeiro) aproximadamente 41\% superior para o processamento do exato mesmo banco de dados. 
+
+\subsection{Impacto na Resiliência da Infraestrutura Alvo}
+
+Além do alívio financeiro nas \acp{API}, o posicionamento do módulo de resposta mitigou drasticamente o esforço no servidor alvo. Como a regra restritiva \texttt{deny} foi imposta na fronteira da infraestrutura (\textit{proxy} reverso Nginx), os pacotes advindos do IP malicioso passaram a receber códigos HTTP 403. Esse corte precoce ocorreu sob custos computacionais ínfimos, com tempo de resolução interna invisível nas métricas regulares (sub-milisegundo), blindando o contêiner vulnerável (Juice Shop) da exaustão de processamento.
+
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusão e Trabalhos Futuros}
+\label{sec:conclusao}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+Este artigo propôs e avaliou uma arquitetura \ac{IPS} estruturada em camadas, voltada à orquestração de mitigação cibernética mediada por IA Generativa. Ao atribuir ao \textit{Isolation Forest} o peso contínuo do monitoramento estatístico local, foi possível condensar contextos e acionar a \ac{API} remota do \ac{LLM} estritamente diante de padrões anômalos. 
+
+Em cenário prático, a topologia atenuou as requisições em nuvem em mais de 90\%, sustentando tempos de resposta (RTT) frequentemente na casa de $2$ a $3$ segundos. Além de confirmar o formato estrutural estrito para integração via \ac{ACL}, a pesquisa levanta evidências de que variações nos \textit{tokenizers} afetam diametralmente a projeção orçamentária dos \acp{SOC}, mesmo mantendo uma injeção de contexto equitativa.
+
+\subsection{Ameaças à Validade}
+
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{Validade Interna:} O uso de apenas três atributos numéricos (status, tempo, bytes) limita a capacidade do iForest de capturar anomalias sutis, como ataques de camada de aplicação que não alteram esses campos. A escolha dos hiperparâmetros (\texttt{contamination='auto'}) pode não refletir a proporção real de ataques em cenários de produção, afetando a taxa de falsos positivos.
+
+\item \textbf{Validade Externa:} Os experimentos foram conduzidos em um \textit{testbed} isolado com tráfego gerado por ferramenta automatizada (OWASP ZAP). O comportamento de ataques reais, especialmente APTs e ataques \textit{Low-and-Slow}, pode não ser adequadamente representado. Assim, a generalização dos resultados para ambientes empresariais complexos requer validação adicional com \textit{datasets} como CIC-IDS2017.
+
+\item \textbf{Validade de Construção:} A métrica de acurácia (extração correta do IP) não captura a capacidade do sistema de lidar com ataques distribuídos ou com IPs dinâmicos. Além disso, a decisão de bloquear apenas o endereço IP, sem considerar outros atributos como \textit{User-Agent} ou frequência de requisições, é uma simplificação que pode ser contornada em versões futuras.
+
+\end{enumerate}
+
+\subsection{Trabalhos Futuros} 
+(TEMPORÁRIO)
+Para os próximos passos desta pesquisa, planeja-se submeter o \textit{framework} a estresses heterogêneos dotados de ataques furtivos (padrões \textit{Low and Slow} ou APTs de múltiplos vetores). Essa imersão fornecerá os falsos negativos necessários para desenhar limites acurados através de métricas de confusão robustas, além de pavimentar estudos relacionados à calibração preditiva contínua do próprio limiar de tolerância da floresta de isolamento. Adicionalmente, pretendemos expandir a engenharia de \textit{features}, incorporando técnicas de Processamento de Linguagem Natural (NLP) para analisar a entropia do conteúdo das requisições. Outra vertente de evolução inclui a integração com técnicas de \textit{Retrieval-Augmented Generation} (RAG) para fornecer ao modelo um contexto arquitetural dinâmico da rede, e a investigação de modelos fundamentais de código aberto executados localmente (\textit{edge computing}), visando mitigar em definitivo a dependência de conectividade externa e maximizar a privacidade dos dados, elevando a maturidade do sistema apresentado neste simpósio.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{sample-base}
+
+
+\end{document}
