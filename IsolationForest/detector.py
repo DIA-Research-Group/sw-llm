@@ -19,6 +19,7 @@ load_dotenv()
 # --- EXPERIMENT CONFIGURATION ---
 TEST_DURATION_SECONDS = 600
 global_start_time = time.time()
+ENFORCEMENT_MODE = os.getenv("ENFORCEMENT_MODE", "log_only").strip().lower()
 
 # Absolute paths for Docker-mapped volume access
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,15 +31,48 @@ base_traffic_csv = os.path.join(script_dir, 'trafego_base.csv')
 results_dir = os.path.join(os.path.dirname(script_dir), "resultados")
 os.makedirs(results_dir, exist_ok=True)
 RESEARCH_RESULTS_FILE = os.path.join(results_dir, "resultados_pesquisa.csv")
+shadow_blocks_csv = os.path.join(results_dir, "ips_bloqueados_simulado.csv")
 
-def save_research_metric(model_name, tokens_consumed, api_latency, blocked_ip, logs_count):
+# Ensure existing legacy CSV has Enforcement_Mode column if already present
+if os.path.isfile(RESEARCH_RESULTS_FILE) and os.path.getsize(RESEARCH_RESULTS_FILE) > 0:
+    try:
+        with open(RESEARCH_RESULTS_FILE, 'r', encoding='utf-8') as f:
+            first_line = f.readline()
+        if 'Enforcement_Mode' not in first_line:
+            df_legacy = pd.read_csv(RESEARCH_RESULTS_FILE)
+            df_legacy = df_legacy.rename(columns={
+                'Modelo': 'Model',
+                'Tokens_Totais': 'Total_Tokens',
+                'Latencia_Segundos': 'Latency_Seconds',
+                'IP_Bloqueado': 'Blocked_IP',
+                'Logs_na_Janela': 'Logs_in_Window'
+            })
+            if 'Enforcement_Mode' not in df_legacy.columns:
+                df_legacy['Enforcement_Mode'] = 'active'
+            df_legacy.to_csv(RESEARCH_RESULTS_FILE, index=False)
+            print("[INFO] Migrated legacy results CSV to include 'Enforcement_Mode' column.")
+    except Exception as e:
+        print(f"[WARNING] Could not check/migrate legacy results CSV: {e}")
+
+def register_shadow_block(ip, model_name, latency):
+    """Registra um IP que teria sido bloqueado, sem aplicar o bloqueio de fato."""
+    header_required = not os.path.isfile(shadow_blocks_csv) or os.path.getsize(shadow_blocks_csv) == 0
+    with open(shadow_blocks_csv, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if header_required:
+            writer.writerow(['Timestamp', 'IP', 'Model', 'Latency_Seconds'])
+        writer.writerow([datetime.now().isoformat(), ip, model_name, latency])
+
+def save_research_metric(model_name, tokens_consumed, api_latency, blocked_ip, logs_count, enforcement_mode=None):
     """Persists experimental metrics for scientific analysis."""
-    header_required = not os.path.isfile(RESEARCH_RESULTS_FILE)
+    if enforcement_mode is None:
+        enforcement_mode = ENFORCEMENT_MODE
+    header_required = not os.path.isfile(RESEARCH_RESULTS_FILE) or os.path.getsize(RESEARCH_RESULTS_FILE) == 0
     with open(RESEARCH_RESULTS_FILE, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if header_required:
-            writer.writerow(['Model', 'Total_Tokens', 'Latency_Seconds', 'Blocked_IP', 'Logs_in_Window'])
-        writer.writerow([model_name, tokens_consumed, api_latency, blocked_ip, logs_count])
+            writer.writerow(['Model', 'Total_Tokens', 'Latency_Seconds', 'Blocked_IP', 'Logs_in_Window', 'Enforcement_Mode'])
+        writer.writerow([model_name, tokens_consumed, api_latency, blocked_ip, logs_count, enforcement_mode])
 
 def reset_security_environment():
     """Restores the network security configuration to its baseline state."""
@@ -58,7 +92,7 @@ def reset_security_environment():
 # Register automated cleanup for research integrity
 atexit.register(reset_security_environment)
 
-print("=== INITIALIZING AUTONOMIC PREVENTION SYSTEM ===")
+print(f"=== INITIALIZING AUTONOMIC PREVENTION SYSTEM (Mode: {ENFORCEMENT_MODE.upper()}) ===")
 
 # --- ANOMALY DETECTION MODEL TRAINING ---
 print("[*] Training Isolation Forest with baseline traffic data...")
@@ -252,16 +286,20 @@ try:
                     tokens_consumed=tokens_used,
                     api_latency=latency,
                     blocked_ip=threat_ip,
-                    logs_count=len(context_collection[:50])
+                    logs_count=len(context_collection[:50]),
+                    enforcement_mode=ENFORCEMENT_MODE
                 )
 
                 if decision.get('ataque_detectado') and threat_ip and threat_ip != 'N/A':
-                    print(f"[ACTION] THREAT CONFIRMED. Enforcing mitigation for IP: {threat_ip}")
-                    with open(blocklist_path, "a") as f:
-                        f.write(f"deny {threat_ip};\n")
-                    
-                    subprocess.run(["docker", "exec", "nginx-proxy", "nginx", "-s", "reload"], check=True)
-                    print(f"[SUCCESS] Mitigation enforced for {threat_ip}.")
+                    print(f"[ACTION] THREAT CONFIRMED for IP: {threat_ip} (mode={ENFORCEMENT_MODE})")
+                    if ENFORCEMENT_MODE == "active":
+                        with open(blocklist_path, "a") as f:
+                            f.write(f"deny {threat_ip};\n")
+                        subprocess.run(["docker", "exec", "nginx-proxy", "nginx", "-s", "reload"], check=True)
+                        print(f"[SUCCESS] Mitigation enforced for {threat_ip}.")
+                    else:
+                        register_shadow_block(threat_ip, llm_model, latency)
+                        print(f"[SHADOW] IP {threat_ip} teria sido bloqueado (log-only).")
                 else:
                     print("[INFO] No conclusive threat identified by LLM.")
             except Exception as e:

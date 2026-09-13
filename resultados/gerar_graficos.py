@@ -27,6 +27,15 @@ if not dataframes:
 # Consolidate data
 df_consolidated = pd.concat(dataframes, ignore_index=True)
 
+# Standardize column headers (supports legacy Portuguese and English headers)
+df_consolidated = df_consolidated.rename(columns={
+    'Modelo': 'Model',
+    'Tokens_Totais': 'Total_Tokens',
+    'Latencia_Segundos': 'Latency_Seconds',
+    'IP_Bloqueado': 'Blocked_IP',
+    'Logs_na_Janela': 'Logs_in_Window'
+})
+
 # Data Cleaning: Filter specific models if necessary and map identifiers to formal names
 model_mapping = {
     'openai/gpt-4o-mini': 'GPT-4o-mini',

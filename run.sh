@@ -10,8 +10,12 @@ MODEL_IDENTIFIER="anthropic/claude-3-5-haiku"
 # Total execution duration (10 minutes = 600s + 10s buffer)
 EXECUTION_DURATION=610 
 
+# Enforcement Mode: 'log_only' (shadow mode, default) or 'active' (physical block)
+ENFORCEMENT_MODE="${ENFORCEMENT_MODE:-log_only}"
+
 echo "=========================================================="
 echo "  INITIALIZING SCIENTIFIC EXPERIMENT: $MODEL_IDENTIFIER"
+echo "  ENFORCEMENT MODE: $ENFORCEMENT_MODE"
 echo "=========================================================="
 
 # 1. Environment Sanitization and Reset
@@ -39,9 +43,9 @@ echo "[*] Waiting 20 seconds for cluster stabilization..."
 sleep 20
 
 # 3. Parallel Execution of Experimental Components
-echo "[*] Activating Autonomic Detection Engine ($MODEL_IDENTIFIER)..."
+echo "[*] Activating Autonomic Detection Engine ($MODEL_IDENTIFIER, mode: $ENFORCEMENT_MODE)..."
 # Start the detector in the background and capture PID
-MODELO_IA=$MODEL_IDENTIFIER python IsolationForest/detector.py &
+ENFORCEMENT_MODE=$ENFORCEMENT_MODE MODELO_IA=$MODEL_IDENTIFIER python IsolationForest/detector.py &
 DETECTOR_PID=$!
 
 echo "[*] Launching adversarial simulation (OWASP ZAP)..."
