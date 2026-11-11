@@ -1,5 +1,7 @@
 # Autonomic Intrusion Prevention System via Large Language Models (LLM-IPS)
 
+**English** | [Português](README.pt-BR.md)
+
 This repository provides the experimental framework and source code for research regarding the integration of Large Language Models (LLMs) into autonomic security architectures. The project evaluates the efficacy of LLMs in log analysis, threat classification, and automated incident response within a containerized environment.
 
 Besides the original hybrid detector (Isolation Forest + LLM), the repository contains an **ablation framework**: every proposed improvement is an independent flag, so each one can be measured alone, stacked with the others, or removed from the full stack, over repeated runs with confidence intervals and significance tests.
@@ -41,7 +43,7 @@ The primary objective of this study is to determine if Large Language Models can
 ### 3.1 Prerequisites
 *   Docker and Docker Compose v2.20+ (the user must be able to run `docker` without `sudo`)
 *   Python 3.10+ on the host (runner, analysis and tests)
-*   An OpenRouter API key (or any OpenAI-compatible endpoint) for runs with a real LLM
+*   An OpenRouter API key (or any OpenAI-compatible endpoint) for runs with a real LLM, **with credit on the account**
 *   ~8 GB free RAM (Elasticsearch 2 GB heap, ZAP 2 GB, Logstash 512 MB)
 *   Free host ports: 80, 5044, 9200; plus 6380 (Redis), 7474/7687 (Neo4j) when those factors are used
 
@@ -66,9 +68,9 @@ xdg-open runs/smoke/analysis/report.md
 # 2. Original study condition (ZAP only, active blocking, 10 min, real LLM)
 ./run.sh                                             # MODELO_IA=openai/gpt-4o-mini ./run.sh to change the model
 
-# 3. A real pilot of the ablation (3 repetitions of the ZAP scenario)
-python -m ips.run experiments/ablation.yaml --scenarios zap --reps 3
-python -m ips.analyze runs/ablation
+# 3. Pilot with the real model (baseline and shadow, 3 scenarios, 2 repetitions, ~1.5 h)
+python -m ips.run experiments/pilot.yaml --only baseline,+shadow --scenarios zap,slowloris,vulhub
+python -m ips.analyze runs/pilot
 ```
 
 ## 4. Ablation Framework
@@ -122,7 +124,7 @@ Configurations with the same factor set are generated only once and named canoni
 ```yaml
 name: ablation            # output goes to runs/<name>/
 duration_s: 600           # attack window
-warmup_s: 60              # benign-only period before the attack (GNN calibration)
+warmup_s: 60              # benign-only period before the attack (GNN and l1fit calibration)
 repetitions: 33
 seed: 42
 base:                     # DetectorConfig fields applied to every configuration
@@ -148,6 +150,7 @@ Provided experiments (`experiments/`):
 |---|---|
 | `ablation.yaml` | main study: 9 factors (28 configurations), 3 arms, 4 scenarios |
 | `ablation-replay.yaml` | detector-only factors for paired replay (see 4.6) |
+| `pilot.yaml` | same matrix with a 300 s window and 2 repetitions (pilot with the real model) |
 | `smoke.yaml` | pipeline validation with mock LLM, short runs |
 | `legacy.yaml` | original condition (used by `run.sh`) |
 | `detector-default.yaml` | config used when the detector container is started by hand |
@@ -176,6 +179,8 @@ python -m ips.run experiments/ablation.yaml --keep-going               # do not 
 
 Each run: tears down the stack → starts proxy, target, ingestion and optional services → starts benign traffic and the detector → waits `warmup_s` → starts the attackers → waits for the detector to finish → saves logs, image digests and resource samples → tears everything down. Finished runs have a `DONE` marker and are skipped, so an interrupted command can simply be re-run. A full run takes about `warmup_s + duration_s + 1.5 min`.
 
+If the LLM provider answers 401, 402 or 403 (invalid key or no credit), the run is aborted and the matrix stops, instead of recording results where every window is an error.
+
 ### 4.6 Paired replay (cheaper, stronger comparisons)
 The full live matrix is large (≈3,700 runs, ≈770 h with 33 repetitions). Every live run stores all normalized logs (and connection samples) in `logs.jsonl`, so detector-only factors can be re-run **offline on exactly the same traffic**, with a virtual clock: wall time becomes only the LLM latency, and comparisons are paired (same input), which removes environment variance.
 
@@ -188,7 +193,7 @@ python -m ips.replay experiments/ablation-replay.yaml --traffic runs/ablation/+s
 python -m ips.analyze runs/ablation-replay
 ```
 
-Factors that change the environment (real/TTL blocking, Redis buffer, CRS proxy) are rejected by the replay and must be evaluated live. Blocking is **emulated** in replay (`replay_emulate_block: true`, default): after an IP is blocked, its recorded logs are rewritten as the 403 Nginx would have returned (`request_time` 0, body size measured live). The detector therefore sees the same feedback as in a live active run. A check on one VulHub run gave live vs replay: `attack_block_rate` 0.912 vs 0.921, `llm_calls` 27 vs 29. The attacker's *reaction* to the block (e.g. stopping early) cannot be emulated.
+Factors that change the environment (Redis buffer, CRS proxy) are rejected by the replay and must be evaluated live. Blocking is **emulated** in replay (`replay_emulate_block: true`, default): after an IP is blocked, its recorded logs are rewritten as the 403 Nginx would have returned (`request_time` 0, body size measured live). The detector therefore sees the same feedback as in a live active run. A check on one VulHub run gave live vs replay: `attack_block_rate` 0.912 vs 0.921, `llm_calls` 27 vs 29. The attacker's *reaction* to the block (e.g. stopping early) cannot be emulated.
 
 ### 4.7 Analysis
 ```bash
@@ -233,7 +238,7 @@ Objective: mean(metric) − fp_penalty · mean(fp_ips), ties broken by fewer tok
 |---|---|
 | `detector_config.json`, `config.json` | effective detector configuration |
 | `environment.json` | git commit, dirty flag, Python and package versions |
-| `run.json` | factors, profiles, timestamps (infra ready, attack start, end), image digests |
+| `run.json` | factors, profiles, timestamps (infra ready, attack start, end), image digests, dataset hashes |
 | `windows.csv` | every decision (LLM, KG, hunt): trigger, logs sent, ground-truth counts, tokens, cost, latency, served model/provider/generation id, decision, explanation |
 | `layer1.csv` | every log: label, features, iForest score/prediction, GNN score/prediction |
 | `enforcement.csv` | blocks, shadow blocks, expirations, invalid or duplicate IPs |
@@ -264,6 +269,7 @@ Without `--config`, the historical variables `MODELO_IA` and `ENFORCEMENT_MODE` 
 *   **Files in `runs/` owned by root.** The detector container runs with your UID/GID (`HOST_UID`, `HOST_GID`, `DOCKER_GID`, set by the runner). When starting it by hand, export them if they differ from 1000/1000/964.
 *   **ZAP gets killed.** Its heap is fixed with `-Xmx2g`. Without it, `zap.sh` sizes the heap from the host RAM and exceeds the container limit. ZAP needs ~60 s to start scanning.
 *   **First requests return 502.** Normal while Juice Shop boots. The runner waits for a non-5xx response before starting traffic.
+*   **"Abortado: ... 402".** The OpenRouter account has no credit. The limit set on the key is only a spending cap, not a balance. Add credit and re-run the same command (finished runs are skipped).
 
 ## 7. Known Limitations
 *   The fixes above are opt-in factors, so their cost is measured instead of assumed. The defaults still reproduce the original limitations: CSV-fitted iForest, stripped request line, permissive KG shortcut.
@@ -284,6 +290,7 @@ Without `--config`, the historical variables `MODELO_IA` and `ENFORCEMENT_MODE` 
 *   `docker/vulhub/`: vulnerable CGI for Shellshock.
 *   `logstash/pipeline/`: ingestion pipelines (`elasticsearch.conf`, `redis.conf`).
 *   `datasets/`: external datasets (not versioned; `fetch_csic.sh` downloads and checks them, see `datasets/README.md`).
+*   `runs/pilot/`: analysis of the pilot with the real model (only `analysis/` is versioned; see `runs/pilot/README.md`).
 *   `tests/`: offline tests (pytest).
 *   `IsolationForest/`: baseline traffic (`trafego_base.csv`), its generator and the original monolithic detector (kept for reference only).
 *   `resultados/`: historical results of the paper and plotting scripts.
