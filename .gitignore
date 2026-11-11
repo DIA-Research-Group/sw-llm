@@ -29,3 +29,5 @@ datasets/*
 !datasets/README.md
 .venv/
 .pytest_cache/
+!datasets/fetch_csic.sh
+!datasets/*.sha256

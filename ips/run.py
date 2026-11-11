@@ -93,6 +93,22 @@ def image_digests() -> dict[str, str]:
     return digests
 
 
+def dataset_hashes(globs: tuple[str, ...]) -> dict[str, str]:
+    """SHA-256 dos arquivos de dataset usados (correcao 5: versao exata registrada)."""
+    import glob as _glob
+    import hashlib
+
+    out = {}
+    for pattern in globs:
+        for f in sorted(_glob.glob(os.path.join(ROOT, pattern))):
+            h = hashlib.sha256()
+            with open(f, "rb") as fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    h.update(chunk)
+            out[os.path.relpath(f, ROOT)] = h.hexdigest()
+    return out
+
+
 def save_logs(container: str, path: str) -> None:
     with open(path, "w") as fh:
         subprocess.run(["docker", "logs", container], stdout=fh, stderr=subprocess.STDOUT)
@@ -170,7 +186,10 @@ class Runner:
             "experiment": self.exp_name, "config": spec.name, "factors": spec.factors, "scenario": scenario_name,
             "rep": rep, "environment": spec.environment, "profiles": profiles, "warmup_s": self.exp.warmup_s,
             "duration_s": self.exp.duration_s, "resources": resources,
+            "datasets": dataset_hashes(scenario.datasets),
         }
+        if scenario.datasets and not meta["datasets"]:
+            raise RuntimeError(f"cenario {scenario_name} exige dataset (ver datasets/README.md)")
         log.info("=== %s | %s | rep %d ===", spec.name, scenario_name, rep)
         all_down(files)
         with open(os.path.join(ROOT, "blocklist.conf"), "w") as fh:

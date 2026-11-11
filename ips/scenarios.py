@@ -13,6 +13,7 @@ class Scenario:
     targets: tuple[str, ...] = ()
     benign: bool = True
     env: dict[str, str] = field(default_factory=dict)
+    datasets: tuple[str, ...] = ()  # globs cujo SHA-256 vai para o run.json
 
 
 SCENARIOS = {
@@ -36,6 +37,7 @@ SCENARIOS = {
     "csic": Scenario(
         "csic", "#16 Replay rotulado do CSIC 2010 pelo proxy real + trafego benigno",
         profiles=("csic",), attackers=("csic-benign", "csic-attack"),
+        datasets=("datasets/csic2010/*.csv", "datasets/csic2010/*.txt"),
     ),
 }
 
