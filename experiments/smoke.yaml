@@ -1,0 +1,18 @@
+# Validacao rapida do pipeline completo sem custo de API (LLM simulado).
+#   python -m ips.run experiments/smoke.yaml && python -m ips.analyze runs/smoke
+name: smoke
+duration_s: 150
+warmup_s: 30
+repetitions: 1
+base:
+  llm_backend: mock
+  gnn_epochs: 50
+factor_order: [shadow, kg, gnn]
+factors:
+  shadow: {enforcement: log_only}
+  kg: {knowledge_graph: true, kg_hunt_interval_s: 15}
+  gnn: {gnn: true}
+design: [baseline, isolated]
+arms:
+  crs_pl1: {proxy: crs, crs_paranoia: 1, pipeline: observe}
+scenarios: [zap]

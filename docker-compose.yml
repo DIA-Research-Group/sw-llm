@@ -1,39 +1,92 @@
+# Laboratorio do IPS hibrido.
+#
+# Cada componente opcional fica atras de um profile, ativado pelo runner de
+# experimentos (python -m ips.run) conforme a configuracao e o cenario:
+#
+#   proxy-nginx               proxy reverso (sempre)
+#   proxy-crs                 WAF OWASP CRS atras do proxy (#19)
+#   es | redis                buffer de logs (Elasticsearch | Redis, #21)
+#   kg                        Neo4j (knowledge graph, #13)
+#   detector                  detector em container (versoes fixadas, #15)
+#   benign                    trafego benigno simultaneo (#16)
+#   zap | slowloris | vulhub | csic   cenarios de ataque (#17, #22, #16)
+#
+# IPs fixos permitem rotular cada log (ataque/benigno) pelo endereco de origem.
+# Para uso manual: COMPOSE_PROFILES=proxy-nginx,es docker compose up -d
+
+name: ips-lab
+
+x-proxy-logging: &proxy-logging
+  driver: syslog
+  options:
+    syslog-address: "tcp://127.0.0.1:5044"
+    tag: "nginx-access"
+    mode: "non-blocking"
+    max-buffer-size: "4m"
+
+x-traffic: &traffic
+  build:
+    context: ./docker/traffic
+  image: ips-traffic:latest
+  environment:
+    TARGET: http://nginx-proxy
+  restart: "no"
+
 services:
-  # Proxy Reverso
+  # ------------------------------------------------------------ proxy reverso
   nginx:
-    image: nginx:alpine
+    image: nginx:alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
     container_name: nginx-proxy
+    profiles: ["proxy-nginx"]
     ports:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro,z
       - ./blocklist.conf:/etc/nginx/blocklist.conf:ro,z
+      - ./docker/nginx/backend-${PROXY_BACKEND:-juice}.conf:/etc/nginx/backend.conf:ro,z
     networks:
-      - live_fire_network
+      live_fire_network:
+        ipv4_address: 172.30.0.10
+        aliases: [nginx-proxy]
     depends_on:
       juice-shop:
         condition: service_started
       logstash:
         condition: service_healthy
-    # Roteamento dos logs de ACESSO para o Logstash
-    logging:
-      driver: syslog
-      options:
-        syslog-address: "tcp://127.0.0.1:5044"
-        tag: "nginx-access"
-        mode: "non-blocking"
-        max-buffer-size: "4m"
- 
-  # ALVO: Juice Shop
+    logging: *proxy-logging
+
+  # #19: WAF tradicional (ModSecurity + OWASP Core Rule Set) como braco de
+  # comparacao. Fica *atras* do proxy baseline (que mantem o mesmo log JSON):
+  # requisicoes barradas pelo CRS aparecem como 403 no log do nginx-proxy.
+  # A imagem nao aceita portas < 1024, por isso escuta em 8080.
+  nginx-crs:
+    image: owasp/modsecurity-crs:nginx-alpine@sha256:b8d5bbf88c643800e31b248993858c335e4907ba0ee473d0c81c5726fb2c1bdc
+    container_name: nginx-crs
+    profiles: ["proxy-crs"]
+    environment:
+      PORT: "8080"
+      BACKEND: http://juice-shop:3000
+      PARANOIA: ${CRS_PARANOIA:-1}
+      BLOCKING_PARANOIA: ${CRS_PARANOIA:-1}
+      ANOMALY_INBOUND: ${CRS_ANOMALY_INBOUND:-5}
+      MODSEC_AUDIT_LOG: /dev/null
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.17
+    depends_on:
+      juice-shop:
+        condition: service_started
+
+  # ------------------------------------------------------------- alvo principal
   juice-shop:
-    image: bkimminich/juice-shop
+    image: bkimminich/juice-shop@sha256:877fc77b12d72b42e486eb09b6b1711cc56514306d92006b284e7e7cf076a809
     container_name: juice-shop
     networks:
-      - live_fire_network
+      live_fire_network:
+        ipv4_address: 172.30.0.11
     depends_on:
       logstash:
         condition: service_healthy
-    # Roteamento dos logs de SISTEMA/DESAFIOS para o Logstash
     logging:
       driver: syslog
       options:
@@ -42,11 +95,12 @@ services:
         tag: "juice-shop-telemetry"
         mode: "non-blocking"
         max-buffer-size: "4m"
- 
-  # BANCO DE DADOS
+
+  # ------------------------------------------------------- ingestao e buffers
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.12.0}
     container_name: elasticsearch
+    profiles: ["es"]
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -54,13 +108,13 @@ services:
     ports:
       - "9200:9200"
     networks:
-      - live_fire_network
+      live_fire_network:
+        ipv4_address: 172.30.0.12
     deploy:
       resources:
         limits:
           memory: 4G
- 
-  # PIPELINE DE INGESTÃO
+
   logstash:
     build:
       context: ./logstash
@@ -68,50 +122,236 @@ services:
     container_name: logstash
     environment:
       - LS_JAVA_OPTS=-Xms512m -Xmx512m
+      - XPACK_MONITORING_ENABLED=false
+    volumes:
+      - ./logstash/pipeline/${LOG_BUFFER:-elasticsearch}.conf:/usr/share/logstash/pipeline/logstash.conf:ro,z
     ports:
       - "5044:5044"
     networks:
-      - live_fire_network
+      live_fire_network:
+        ipv4_address: 172.30.0.13
     depends_on:
-      - elasticsearch
-    # O healthcheck pesquisa a API interna do Logstash.
+      elasticsearch:
+        condition: service_started
+        required: false
+      redis:
+        condition: service_started
+        required: false
+    # A API HTTP (9600) do Logstash nao responde em alguns hosts; o que importa
+    # para o pipeline e a porta de entrada syslog.
     healthcheck:
-      test: ["CMD", "curl", "-s", "-XGET", "http://127.0.0.1:9600"]
-      interval: 10s
+      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/5044"]
+      interval: 5s
       timeout: 5s
-      retries: 10
- 
-  # OBSERVABILIDADE
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
-  #   container_name: kibana
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #   ports:
-  #     - "5601:5601"
-  #   networks:
-  #     - live_fire_network
-  #   depends_on:
-  #     - elasticsearch
- 
-# ATACANTE AUTOMATIZADO
-  owasp-zap:
-    image: ghcr.io/zaproxy/zaproxy:stable
-    container_name: owasp-zap
-    profiles:
-      - atacante
-    environment:
-      - ZAP_JAVA_OPTS=-Xmx2g
+      retries: 30
+      start_period: 20s
+
+  # #21: buffer de logs em RAM (porta 6380 no host para nao colidir com outros Redis)
+  redis:
+    image: redis:7.4-alpine@sha256:7b1753b4c5ad8458906c272a8132b8c15f5557b000379eb115fb239706a384b7
+    container_name: ips-redis
+    profiles: ["redis"]
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6380:6379"
     networks:
-      - live_fire_network
+      live_fire_network:
+        ipv4_address: 172.30.0.14
+
+  # #13: memoria de longo prazo (knowledge graph)
+  neo4j:
+    image: neo4j:5.26-community@sha256:ec10d705830a340c7438e125cb5c4f90522b85369d877c9a581c3de5974ab3d6
+    container_name: ips-neo4j
+    profiles: ["kg"]
+    environment:
+      NEO4J_AUTH: neo4j/ips-research
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 512M
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.15
+
+  # ----------------------------------------------------------------- detector
+  detector:
+    build:
+      context: .
+      dockerfile: docker/detector/Dockerfile
+    image: ips-detector:latest
+    container_name: ips-detector
+    profiles: ["detector"]
+    working_dir: /app
+    command: ["python", "-m", "ips.detector", "--config", "${IPS_CONFIG:-experiments/detector-default.yaml}"]
+    # Roda com o UID do usuario do host (arquivos em runs/ continuam editaveis)
+    # e com o grupo dono do socket do Docker (reload do Nginx, telemetria).
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    group_add: ["${DOCKER_GID:-964}"]
+    environment:
+      HOME: /tmp
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: "*"
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      IPS_ELASTICSEARCH_URL: http://elasticsearch:9200
+      IPS_REDIS_URL: redis://redis:6379/0
+      IPS_NEO4J_URL: bolt://neo4j:7687
+    volumes:
+      - ./:/app:z
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Necessario no Fedora/SELinux para acessar o socket do Docker (reload do Nginx).
+    security_opt:
+      - label=disable
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.16
+
+  # ---------------------------------------------------- trafego benigno (#16)
+  benign-1:
+    <<: *traffic
+    container_name: ips-benign-1
+    profiles: ["benign"]
+    command: ["python", "benign.py", "--seed", "1"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.51
+  benign-2:
+    <<: *traffic
+    container_name: ips-benign-2
+    profiles: ["benign"]
+    command: ["python", "benign.py", "--seed", "2"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.52
+  benign-3:
+    <<: *traffic
+    container_name: ips-benign-3
+    profiles: ["benign"]
+    command: ["python", "benign.py", "--seed", "3"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.53
+
+  # ------------------------------------------------------- cenario: OWASP ZAP
+  owasp-zap:
+    image: ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
+    container_name: owasp-zap-attacker
+    profiles: ["zap", "atacante"]
     volumes:
       - ./:/zap/wrk/:rw,z
-    command: zap-baseline.py -t http://nginx-proxy:80 -d
+    # -Xmx explicito: sem ele o zap.sh dimensiona o heap pela RAM do host
+    # (ex.: 7.9 GB) e estoura o limite de 4 GB do container.
+    command: >-
+      zap-full-scan.py -t http://nginx-proxy:80 -m 10
+      -z "-Xmx2g -config scanner.threadPerHost=2 -config scanner.skipStack=DomXssScanRule"
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.101
     deploy:
       resources:
         limits:
           memory: 4G
- 
+
+  # ------------------------------------------------- cenario: Slowloris (#17)
+  slowloris:
+    <<: *traffic
+    container_name: ips-slowloris
+    profiles: ["slowloris"]
+    command: ["python", "slowloris.py", "--sockets", "${SLOWLORIS_SOCKETS:-900}"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.102
+
+  # ---------------------------------------------------- cenario: VulHub (#22)
+  # Sistema composto: Solr (Log4Shell, CVE-2021-44228), Bash/CGI (Shellshock,
+  # CVE-2014-6271) e Apache httpd (path traversal/RCE, CVE-2021-41773).
+  vh-solr:
+    image: vulhub/solr:8.11.0@sha256:fe2561b7ac823bf2467fa211935fc9399f9c29874ec7cbe733df35201649ba23
+    container_name: vh-solr
+    profiles: ["vulhub"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.21
+  vh-bash:
+    image: vulhub/bash:4.3.0-with-httpd@sha256:1ee787c9df082795ce4dce11bdc1dc04a69bda3dbf9ba104b342873e448a1332
+    container_name: vh-bash
+    profiles: ["vulhub"]
+    volumes:
+      - ./docker/vulhub/victim.cgi:/var/www/html/victim.cgi:ro,z
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.22
+  vh-httpd:
+    image: vulhub/httpd:2.4.49@sha256:a6c32432b1ed40818488e238769e962a4151ef3b74b54416d9d5d396ba8cab5f
+    container_name: vh-httpd
+    profiles: ["vulhub"]
+    # Configuracao vulneravel usada pelo VulHub para a CVE-2021-41773:
+    # diretorio raiz acessivel e mod_cgid habilitado.
+    command:
+      - sh
+      - -c
+      - >-
+        sed -i -e '/<Directory \/>/,/<\/Directory>/ s/Require all denied/Require all granted/'
+        -e 's/^#LoadModule cgid_module/LoadModule cgid_module/'
+        /usr/local/apache2/conf/httpd.conf && exec httpd-foreground
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.23
+  # Tres atacantes com as mesmas TTPs e inicio escalonado (botnet), o que
+  # permite medir se o knowledge graph reconhece IPs novos sem chamar o LLM.
+  vulhub-attacker-1:
+    <<: *traffic
+    container_name: ips-vulhub-attacker-1
+    profiles: ["vulhub"]
+    command: ["python", "vulhub_attack.py", "--seed", "1", "--delay", "0"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.103
+  vulhub-attacker-2:
+    <<: *traffic
+    container_name: ips-vulhub-attacker-2
+    profiles: ["vulhub"]
+    command: ["python", "vulhub_attack.py", "--seed", "2", "--delay", "${VULHUB_STAGGER_S:-120}"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.104
+  vulhub-attacker-3:
+    <<: *traffic
+    container_name: ips-vulhub-attacker-3
+    profiles: ["vulhub"]
+    command: ["python", "vulhub_attack.py", "--seed", "3", "--delay", "${VULHUB_STAGGER2_S:-240}"]
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.105
+
+  # ------------------------------------------- cenario: CSIC 2010 (#16)
+  # Replay das requisicoes rotuladas do dataset atraves do proxy real, para que
+  # o Nginx gere request_time/status/bytes (ausentes no dataset original).
+  csic-benign:
+    <<: *traffic
+    container_name: ips-csic-benign
+    profiles: ["csic"]
+    command: ["python", "csic_replay.py", "--label", "normal", "--rps", "${CSIC_BENIGN_RPS:-3}"]
+    volumes:
+      - ./datasets:/datasets:ro,z
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.60
+  csic-attack:
+    <<: *traffic
+    container_name: ips-csic-attack
+    profiles: ["csic"]
+    command: ["python", "csic_replay.py", "--label", "anomalous", "--rps", "${CSIC_ATTACK_RPS:-3}"]
+    volumes:
+      - ./datasets:/datasets:ro,z
+    networks:
+      live_fire_network:
+        ipv4_address: 172.30.0.110
+
 networks:
   live_fire_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

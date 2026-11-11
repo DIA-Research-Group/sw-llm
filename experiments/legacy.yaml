@@ -1,0 +1,12 @@
+# Reproduz a condicao do artigo/run.sh original: somente ZAP, bloqueio ativo,
+# sem trafego benigno, 10 minutos.
+name: legacy
+duration_s: 600
+warmup_s: 0
+repetitions: 1
+base:
+  model: anthropic/claude-3-5-haiku
+design: [baseline]
+factor_order: []
+factors: {}
+scenarios: [zap_legacy]

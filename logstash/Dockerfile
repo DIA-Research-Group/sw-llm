@@ -1,5 +1,5 @@
 FROM docker.elastic.co/logstash/logstash:8.12.0
 
-# Remove configurações padrão e copia o nosso pipeline estrito
+# O pipeline e montado em tempo de execucao a partir de logstash/pipeline/,
+# conforme LOG_BUFFER (elasticsearch | redis). Ver docker-compose.yml.
 RUN rm -f /usr/share/logstash/pipeline/logstash.conf
-COPY logstash.conf /usr/share/logstash/pipeline/logstash.conf
