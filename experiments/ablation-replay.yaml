@@ -1,0 +1,25 @@
+# Ablacao pareada dos fatores que so alteram a logica do detector, aplicada
+# offline sobre o trafego gravado ao vivo (logs.jsonl). Ver ips/replay.py.
+#
+#   python -m ips.run experiments/ablation.yaml --only +shadow --reps 33
+#   python -m ips.replay experiments/ablation-replay.yaml --traffic runs/ablation/+shadow
+#   python -m ips.analyze runs/ablation-replay
+#
+# Fatores de ambiente (log_buffer: redis, proxy: crs) nao entram aqui.
+name: ablation-replay
+seed: 42
+repetitions: 33
+base:
+  model: openai/gpt-4o-mini-2024-07-18
+  llm_backend: openrouter
+factor_order: [shadow, explain, conn, kg, gnn]
+factors:
+  shadow:  {enforcement: log_only}
+  explain: {explain: true}
+  conn:    {conn_telemetry: true}
+  kg:      {knowledge_graph: true}
+  gnn:     {gnn: true}
+design: [baseline, isolated, cumulative, leave_one_out]
+arms:
+  llm_only: {layer1: none, enforcement: log_only}
+scenarios: [zap, slowloris, vulhub, csic]
