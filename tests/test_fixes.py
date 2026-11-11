@@ -204,3 +204,21 @@ def test_dataset_hashes(tmp_path, monkeypatch):
     monkeypatch.setattr(run_mod, "ROOT", str(tmp_path))
     h = run_mod.dataset_hashes(("datasets/csic2010/*.csv",))
     assert h == {"datasets/csic2010/a.csv": "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"}
+
+
+def test_account_error_aborts(monkeypatch):
+    """401/402/403 do provedor abortam a execucao (sem janelas invalidas)."""
+    import pytest
+
+    from ips import layer2
+    from ips.config import DetectorConfig
+
+    class Resp:
+        status_code = 402
+        text = '{"error": "credits"}'
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "x")
+    monkeypatch.setattr(layer2.requests, "post", lambda *a, **k: Resp())
+    analyst = layer2.LLMAnalyst(DetectorConfig(llm_backend="openrouter"))
+    with pytest.raises(layer2.LLMAccountError):
+        analyst.analyze([{"remote_addr": "1.2.3.4"}])

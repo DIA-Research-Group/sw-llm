@@ -31,6 +31,7 @@ import yaml
 from ips import scenarios as sc
 from ips.config import Experiment, RunSpec, dump_json
 from ips.enforcement import HEADER
+from ips.layer2 import ACCOUNT_ERROR_EXIT, LLMAccountError
 
 log = logging.getLogger("ips.run")
 PROJECT = "ips-lab"
@@ -239,6 +240,8 @@ class Runner:
             meta["images"] = image_digests()
             dump_json(os.path.join(rdir, "run.json"), meta)
             all_down(files)
+        if meta.get("detector_exit_code") == ACCOUNT_ERROR_EXIT:
+            raise LLMAccountError(f"chave/credito do provedor do LLM (ver {rdir}/ips-detector.log)")
         if meta.get("detector_exit_code") != 0:
             raise RuntimeError(f"detector terminou com codigo {meta.get('detector_exit_code')} em {rdir}")
         open(os.path.join(rdir, "DONE"), "w").close()
@@ -296,6 +299,9 @@ def main(argv: list[str] | None = None) -> int:
         except KeyboardInterrupt:
             all_down()
             raise
+        except LLMAccountError as exc:
+            log.error("Abortado: %s", exc)
+            return 2
         except Exception as exc:
             failures += 1
             log.error("Falha em %s/%s/rep %d: %s", spec.name, scenario, rep, exc)

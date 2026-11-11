@@ -25,7 +25,7 @@ import yaml
 
 from ips.config import DetectorConfig, dump_json
 from ips.enforcement import Enforcer, nginx_reloader
-from ips.layer2 import Decision, LLMAnalyst
+from ips.layer2 import ACCOUNT_ERROR_EXIT, Decision, LLMAccountError, LLMAnalyst
 from ips.records import Labeler, llm_view, strip_rich
 from ips.sources import Clock, build_source
 from ips.telemetry import RunRecorder
@@ -374,7 +374,11 @@ def main(argv: list[str] | None = None) -> int:
 
     signal.signal(signal.SIGTERM, on_signal)
     signal.signal(signal.SIGINT, on_signal)
-    det.run()
+    try:
+        det.run()
+    except LLMAccountError as exc:
+        log.error("Abortado: chave/credito do provedor do LLM: %s", exc)
+        return ACCOUNT_ERROR_EXIT
     return 0
 
 

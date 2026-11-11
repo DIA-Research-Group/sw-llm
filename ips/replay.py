@@ -28,6 +28,7 @@ import shutil
 import sys
 
 from ips.config import Experiment, dump_json
+from ips.layer2 import LLMAccountError
 
 log = logging.getLogger("ips.replay")
 LIVE_ONLY = {"log_buffer": {"redis"}, "pipeline": {"observe"}}
@@ -100,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
                 "rep": rep, "mode": "replay", "traffic": logs, "environment": spec.environment,
             })
             open(os.path.join(rdir, "DONE"), "w").close()
+        except LLMAccountError as exc:
+            log.error("Abortado: problema na conta do provedor do LLM (%s)", exc)
+            return 2
         except Exception as exc:
             failures += 1
             log.error("Falha em %s: %s", rdir, exc)

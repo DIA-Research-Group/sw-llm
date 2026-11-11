@@ -79,6 +79,14 @@ def _as_bool(value: Any) -> bool:
     return bool(value)
 
 
+ACCOUNT_ERROR_EXIT = 3  # codigo de saida do detector quando a conta do LLM falha
+
+
+class LLMAccountError(RuntimeError):
+    """Chave invalida ou sem credito (401/402/403): resultados seriam invalidos,
+    entao a execucao e abortada em vez de registrar janelas com erro."""
+
+
 class LLMAnalyst:
     def __init__(self, cfg):
         self.cfg = cfg
@@ -114,6 +122,8 @@ class LLMAnalyst:
         except requests.RequestException as exc:
             return Decision(status="error", latency_s=round(time.time() - start, 2), error=str(exc))
         latency = round(time.time() - start, 2)
+        if resp.status_code in (401, 402, 403):
+            raise LLMAccountError(f"{resp.status_code}: {resp.text[:300]}")
         if resp.status_code != 200:
             return Decision(status="http_error", latency_s=latency, error=f"{resp.status_code}: {resp.text[:500]}")
         try:
