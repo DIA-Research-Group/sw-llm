@@ -29,7 +29,24 @@ def canonical_name(factors: list[str], order: list[str]) -> str:
     return "+" + "+".join(chosen)
 
 
-def expand_design(order: list[str], design: list[str]) -> list[tuple[str, list[str]]]:
+def close_requirements(factors: list[str], requires: dict[str, list[str]]) -> set[str]:
+    out = set(factors)
+    changed = True
+    while changed:
+        changed = False
+        for f in list(out):
+            for dep in requires.get(f, []):
+                if dep not in out:
+                    out.add(dep)
+                    changed = True
+    return out
+
+
+def expand_design(order: list[str], design: list[str],
+                  requires: dict[str, list[str]] | None = None) -> list[tuple[str, list[str]]]:
+    """``requires`` (ex.: {"kgsafe": ["kg"]}) adiciona dependencias a cada
+    conjunto antes da deduplicacao: ``+kgsafe`` vira ``+kg+kgsafe`` e
+    ``all-kg`` coincide com ``all`` (e e descartado)."""
     unknown = set(design) - {"baseline", "isolated", "cumulative", "leave_one_out", "full_factorial"}
     if unknown:
         raise ValueError(f"Desenho desconhecido: {sorted(unknown)}")
@@ -49,7 +66,7 @@ def expand_design(order: list[str], design: list[str]) -> list[tuple[str, list[s
     seen: set[frozenset[str]] = set()
     out = []
     for factor_set in sets:
-        key = frozenset(factor_set)
+        key = frozenset(close_requirements(factor_set, requires or {}))
         if key in seen:
             continue
         seen.add(key)

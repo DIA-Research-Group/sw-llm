@@ -5,19 +5,25 @@
 #   python -m ips.replay experiments/ablation-replay.yaml --traffic runs/ablation/+shadow
 #   python -m ips.analyze runs/ablation-replay
 #
-# Fatores de ambiente (log_buffer: redis, proxy: crs) nao entram aqui.
+# Fatores de ambiente (log_buffer: redis, proxy: crs) nao entram aqui. O
+# bloqueio real (baseline, enforcement: active) e emulado: logs do IP bloqueado
+# viram as respostas 403 do Nginx (replay_emulate_block). Grave o trafego em
+# modo shadow para que o ataque fique completo na gravacao.
 name: ablation-replay
 seed: 42
 repetitions: 33
 base:
   model: openai/gpt-4o-mini-2024-07-18
   llm_backend: openrouter
-factor_order: [shadow, explain, conn, kg, gnn]
+factor_order: [shadow, l1fit, explain, richlog, conn, kg, kgsafe, gnn]
 factors:
   shadow:  {enforcement: log_only}
+  l1fit:   {iforest_fit: warmup, iforest_threshold_quantile: 0.01}
   explain: {explain: true}
+  richlog: {rich_log: true}
   conn:    {conn_telemetry: true}
   kg:      {knowledge_graph: true}
+  kgsafe:  {requires: [kg], kg_strict: true}
   gnn:     {gnn: true}
 design: [baseline, isolated, cumulative, leave_one_out]
 arms:

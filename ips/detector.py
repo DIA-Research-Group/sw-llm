@@ -26,7 +26,7 @@ import yaml
 from ips.config import DetectorConfig, dump_json
 from ips.enforcement import Enforcer, nginx_reloader
 from ips.layer2 import Decision, LLMAnalyst
-from ips.records import Labeler, llm_view
+from ips.records import Labeler, llm_view, strip_rich
 from ips.sources import Clock, build_source
 from ips.telemetry import RunRecorder
 
@@ -117,7 +117,11 @@ class Detector:
             if self.conn is not None:
                 records.extend(self.conn.poll(self.clock.now()))
             if records:
-                self.recorder.log_records(records)
+                self.recorder.log_records(records)  # gravacao sempre completa (replay)
+                if not self.cfg.rich_log:
+                    records = [strip_rich(r) for r in records]
+                if not self.live and self.cfg.replay_emulate_block:
+                    records = [self.emulate_block(r) for r in records]
                 self.process(records)
             self.maybe_finalize_window()
             self.maybe_hunt()
@@ -137,6 +141,7 @@ class Detector:
             self.gnn.observe(http, self.clock.now())
 
         if self.layer1 is not None:
+            self.layer1.observe(http, self.clock.now())
             scored = self.layer1.score(http)
         else:
             scored = [r for r in http if r.get("status") is not None]
@@ -182,6 +187,20 @@ class Detector:
             self.context.extend(conn_alerts)
             self.context.extend(candidates)
 
+    def emulate_block(self, rec: dict[str, Any]) -> dict[str, Any]:
+        """Correcao 3: no replay, transforma logs de IPs bloqueados (active/ttl)
+        na resposta que o Nginx teria dado ao ``deny`` (medida em execucoes ao
+        vivo: request_time 0; 153 bytes, ou 555 com o padding para MSIE)."""
+        ip = rec.get("remote_addr")
+        if rec.get("kind", "http") != "http" or ip not in self.enforcer.active:
+            return rec
+        if self.enforcer.blocked_at.get(ip, float("inf")) > (rec.get("ts") or 0):
+            return rec
+        ua = rec.get("http_user_agent") or ""
+        rec.update(status=403, request_time=0.0, body_bytes_sent=555.0 if "MSIE" in ua else 153.0,
+                   emulated_block=True)
+        return rec
+
     # --------------------------------------------------------------- janelas
     def maybe_finalize_window(self) -> None:
         if self.collecting and self.clock.now() - self.window_open_t >= self.cfg.window_s:
@@ -209,11 +228,18 @@ class Detector:
                            t_decision=self.clock.now(), latency_s=0.0, total_tokens=0)
                 self.recorder.windows.write(row)
                 self.summary["kg_decisions"] += 1
-                self.enforcer.block(ip, "kg", self.window_id)
+                if self.cfg.kg_strict:
+                    # Correcao 4: bloqueio provisorio; a proxima decisao sobre o IP e do LLM
+                    self.enforcer.block(ip, "kg", self.window_id, ttl_s=self.cfg.kg_provisional_ttl_s)
+                    self.kg.forbid_shortcut(ip)
+                else:
+                    self.enforcer.block(ip, "kg", self.window_id)
                 log.warning("[KG] assinatura conhecida (sim=%.2f) -> %s", sim, ip)
                 return
         decision = self.analyst.analyze([llm_view(r) for r in sent])
         self.record_decision(row, decision, "llm", sent)
+        if self.kg is not None and decision.status == "ok" and not decision.attack_detected:
+            self.kg.benign_feedback(sent, self.clock.now())
 
     def record_decision(self, row: dict[str, Any], d: Decision, source: str, context: list[dict[str, Any]]) -> None:
         self.clock.elapse(d.latency_s)
@@ -271,6 +297,8 @@ class Detector:
         dump_json(os.path.join(self.cfg.output_dir, "detector_summary.json"), {
             "start": start, "end": end, "duration_s": end - start, **self.summary,
             "iforest_train_samples": getattr(self.layer1, "n_train", None),
+            "iforest_fitted_on": getattr(self.layer1, "fitted_on", None),
+            "iforest_threshold": getattr(self.layer1, "threshold", None),
             "gnn": self.gnn.summary() if self.gnn else None,
         })
         if self.kg is not None:

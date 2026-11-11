@@ -10,6 +10,8 @@ recursos (#21). Agrega por (cenario, configuracao) com media, desvio e IC 95%
 * ``isolated``   – cada configuracao vs ``baseline``;
 * ``cumulative`` – cada passo do empilhamento vs o passo anterior;
 * ``loo``        – ``all`` vs ``all-<fator>`` (contribuicao marginal);
+* ``refinement`` – fator que refina outro (``requires``) vs a dependencia
+  (ex.: ``+kg`` -> ``+kg+kgsafe``);
 * ``arm``        – bracos de comparacao (LLM puro, CRS...) vs ``baseline``.
 
 Testes: t de Welch (bilateral), Mann-Whitney U (robustez), d de Cohen e
@@ -199,8 +201,13 @@ def summarize(df: pd.DataFrame, metrics: list[str]) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def comparison_pairs(configs: list[str], factor_order: list[str], arms: list[str]) -> list[tuple[str, str, str]]:
-    from ips.matrix import canonical_name
+def comparison_pairs(configs: list[str], factor_order: list[str], arms: list[str],
+                     requires: dict[str, list[str]] | None = None) -> list[tuple[str, str, str]]:
+    from ips.matrix import canonical_name, close_requirements
+
+    def canonical_name_req(fs, order):
+        closed = close_requirements(fs, requires or {})
+        return canonical_name([f for f in order if f in closed], order)
 
     have = set(configs)
     pairs = []
@@ -209,15 +216,22 @@ def comparison_pairs(configs: list[str], factor_order: list[str], arms: list[str
             pairs.append(("isolated" if c.startswith("+") and c.count("+") == 1 else "vs_baseline", "baseline", c))
     prev = "baseline"
     for k in range(1, len(factor_order) + 1):
-        cur = canonical_name(factor_order[:k], factor_order)
+        cur = canonical_name_req(factor_order[:k], factor_order)
         if cur in have and prev in have and k > 1:
             pairs.append(("cumulative", prev, cur))
         prev = cur
     if "all" in have:
         for f in factor_order:
-            loo = canonical_name([g for g in factor_order if g != f], factor_order)
-            if loo in have:
+            loo = canonical_name_req([g for g in factor_order if g != f], factor_order)
+            if loo in have and loo != "all":
                 pairs.append(("loo", loo, "all"))
+    # fatores que refinam outro (requires): efeito do refinamento sobre a dependencia
+    for f, deps in (requires or {}).items():
+        if not deps:
+            continue
+        before, after = canonical_name_req(deps, factor_order), canonical_name_req([f], factor_order)
+        if before in have and after in have and before != after:
+            pairs.append(("refinement", before, after))
     for a in arms:
         if a in have and "baseline" in have:
             pairs.append(("arm", "baseline", a))
@@ -237,14 +251,14 @@ def holm(pvals: list[float]) -> list[float]:
 
 
 def compare(df: pd.DataFrame, metrics: list[str], factor_order: list[str], arms: list[str],
-            paired: bool = False) -> pd.DataFrame:
+            paired: bool = False, requires: dict[str, list[str]] | None = None) -> pd.DataFrame:
     """Compara pares de configuracoes. ``paired=True`` (replay sobre o mesmo
     trafego) usa t pareado e Wilcoxon, alinhando por repeticao."""
     from scipy import stats
 
     rows = []
     for scen, g in df.groupby("scenario"):
-        pairs = comparison_pairs(sorted(g["config"].unique()), factor_order, arms)
+        pairs = comparison_pairs(sorted(g["config"].unique()), factor_order, arms, requires)
         for kind, before, after in pairs:
             a = g[g["config"] == before]
             b = g[g["config"] == after]
@@ -376,20 +390,20 @@ def main(argv: list[str] | None = None) -> int:
     os.makedirs(outdir, exist_ok=True)
     metrics = args.metrics.split(",") if args.metrics else [m for m in KEY_METRICS if m in df]
 
-    factor_order, arms, order = [], [], sorted(df["config"].unique())
+    factor_order, arms, order, requires = [], [], sorted(df["config"].unique()), {}
     exp_yaml = os.path.join(args.exp_dir, "experiment.yaml")
     if os.path.exists(exp_yaml):
         from ips.config import Experiment
 
         exp = Experiment.load(exp_yaml)
-        factor_order, arms = exp.factor_order, list(exp.arms)
+        factor_order, arms, requires = exp.factor_order, list(exp.arms), exp.requires
         order = [s.name for s in exp.runs()]
 
     df.to_csv(os.path.join(outdir, "runs.csv"), index=False)
     summary = summarize(df, metrics)
     summary.to_csv(os.path.join(outdir, "summary.csv"), index=False)
     paired = bool((df["mode"] == "replay").all())
-    comps = compare(df, metrics, factor_order, arms, paired=paired)
+    comps = compare(df, metrics, factor_order, arms, paired=paired, requires=requires)
     comps["test"] = "paired t / Wilcoxon" if paired else "Welch t / Mann-Whitney"
     comps.to_csv(os.path.join(outdir, "comparisons.csv"), index=False)
     plot(df, summary, os.path.join(outdir, "figures"), metrics, order)

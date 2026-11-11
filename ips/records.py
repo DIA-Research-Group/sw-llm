@@ -19,7 +19,9 @@ NGINX_FIELDS = (
     "http_user_agent",
     "http_referrer",
 )
-NUMERIC_FIELDS = ("status", "request_time", "body_bytes_sent")
+# Campos do formato de log estendido (expostos ao detector so com rich_log)
+RICH_FIELDS = ("request", "host", "request_length")
+NUMERIC_FIELDS = ("status", "request_time", "body_bytes_sent", "request_length")
 
 
 def parse_ts(value: Any) -> float | None:
@@ -74,8 +76,12 @@ def normalize(source: dict[str, Any], labeler: Labeler | None = None) -> dict[st
         return None  # ex.: telemetria do Juice Shop sem campos HTTP
 
     rec: dict[str, Any] = {k: origin.get(k) for k in NGINX_FIELDS}
+    for k in RICH_FIELDS:
+        if origin.get(k) not in (None, ""):
+            rec[k] = origin[k]
     for k in NUMERIC_FIELDS:
-        rec[k] = _num(rec[k])
+        if k in rec:
+            rec[k] = _num(rec[k])
     if rec["status"] is not None:
         rec["status"] = int(rec["status"])
     rec["timestamp"] = source.get("@timestamp") or origin.get("timestamp") or source.get("timestamp")
@@ -96,8 +102,15 @@ def llm_view(rec: dict[str, Any]) -> dict[str, Any]:
     ``anomaly_score`` (saida -1/1 do ``predict`` do iForest) e mantido porque o
     detector original o incluia no contexto enviado ao modelo.
     """
-    hidden = {"label", "ts", "iforest_score", "iforest_pred", "gnn_score", "gnn_pred", "kind"}
+    hidden = {"label", "ts", "iforest_score", "iforest_pred", "gnn_score", "gnn_pred", "kind", "emulated_block"}
     view = {k: v for k, v in rec.items() if k not in hidden and v is not None}
     if rec.get("kind") == "conn":
         view = {"event": "open_tcp_connections_snapshot", **view}
     return view
+
+
+def strip_rich(rec: dict[str, Any]) -> dict[str, Any]:
+    """Remove os campos estendidos (detector original nao os conhecia)."""
+    for k in RICH_FIELDS:
+        rec.pop(k, None)
+    return rec

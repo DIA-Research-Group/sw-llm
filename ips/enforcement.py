@@ -39,6 +39,7 @@ class Enforcer:
         self.clock = clock
         self.reload = reload
         self.active: dict[str, float | None] = {}  # ip -> expires_at (None = permanente)
+        self.blocked_at: dict[str, float] = {}
         self.flagged: set[str] = set()
 
     def reset(self) -> None:
@@ -62,7 +63,9 @@ class Enforcer:
             "mode": self.mode, "decision_source": source, "window_id": window_id, "expires_at": expires,
         })
 
-    def block(self, ip: str, source: str, window_id: Any) -> str:
+    def block(self, ip: str, source: str, window_id: Any, ttl_s: float | None = None) -> str:
+        """Bloqueia (ou registra, no modo shadow). ``ttl_s`` forca um bloqueio
+        provisorio mesmo no modo active (usado pelo atalho do KG)."""
         try:
             ipaddress.ip_address(ip)
         except ValueError:
@@ -75,22 +78,23 @@ class Enforcer:
             self.flagged.add(ip)
             self._log(ip, "shadow_block", source, window_id)
             return "shadow_block"
-        expires = self.clock.now() + self.ttl_s if self.mode == "ttl" else None
+        ttl = ttl_s if ttl_s is not None else (self.ttl_s if self.mode == "ttl" else None)
+        expires = self.clock.now() + ttl if ttl is not None else None
         self.active[ip] = expires
+        self.blocked_at[ip] = self.clock.now()
         self._write()
         self._reload()
         self._log(ip, "block", source, window_id, expires)
         return "block"
 
     def tick(self) -> None:
-        if self.mode != "ttl":
-            return
         now = self.clock.now()
         expired = [ip for ip, exp in self.active.items() if exp is not None and exp <= now]
         if not expired:
             return
         for ip in expired:
             del self.active[ip]
+            self.blocked_at.pop(ip, None)
             self._log(ip, "expire", "ttl", None)
         self._write()
         self._reload()

@@ -33,6 +33,10 @@ class DetectorConfig:
     redis_key: str = "ips:logs"
     jsonl_path: str | None = None  # replay offline de logs gravados
     replay_speed: float = 0.0  # 0 = o mais rapido possivel; 1.0 = tempo real
+    # Correcao 3: no replay, logs de um IP bloqueado (active/ttl) viram as
+    # respostas 403 que o Nginx teria dado (request_time 0; 153 bytes, ou 555
+    # com o padding para user-agents MSIE).
+    replay_emulate_block: bool = True
 
     # --- Pipeline ------------------------------------------------------------
     pipeline: str = "hybrid"  # hybrid | observe (so registra; usado no braco CRS)
@@ -49,6 +53,13 @@ class DetectorConfig:
     iforest_n_estimators: int = 200
     iforest_contamination: Any = 0.1
     iforest_random_state: int = 42
+    # Correcao 1: treino no aquecimento (logs reais do Nginx, so trafego benigno)
+    # em vez do trafego_base.csv, e limiar calibrado por quantil dos escores
+    # benignos em vez de contamination fixo (que impoe ~10% de alarmes falsos).
+    iforest_fit: str = "baseline_csv"  # baseline_csv | warmup
+    iforest_warmup_s: float = 60.0
+    iforest_min_warmup_samples: int = 50
+    iforest_threshold_quantile: float | None = None  # ex.: 0.01 -> ~1% FPR esperado
     volumetric_threshold: int = 30
     window_s: float = 5.0
     max_context_logs: int = 50
@@ -61,6 +72,10 @@ class DetectorConfig:
     seed: int | None = None
     llm_timeout_s: float = 120.0
     explain: bool = False  # #15: justificativa (XAI) antes da decisao
+    # Correcao 2: expoe ao LLM/KG os campos extras do log (linha crua da
+    # requisicao, Host, tamanho). O Nginx sempre os registra; com False o LLM
+    # recebe exatamente os campos do detector original.
+    rich_log: bool = False
 
     # --- Mitigacao (#18) -----------------------------------------------------
     enforcement: str = "active"  # active | log_only | ttl
@@ -78,6 +93,12 @@ class DetectorConfig:
     kg_hunt_interval_s: float = 30.0
     kg_hunt_min_requests: int = 20
     kg_hunt_min_error_ratio: float = 0.5
+    # Correcao 4: assinaturas so com features discriminativas, memoria negativa
+    # (perfis julgados benignos) e bloqueio provisorio por similaridade.
+    kg_strict: bool = False
+    kg_common_feature_ratio: float = 0.5  # features presentes em > 50% dos IPs sao ignoradas
+    kg_margin: float = 0.1  # sim(maliciosa) - sim(benigna) minima
+    kg_provisional_ttl_s: float = 60.0
 
     # --- GNN (#13 fase 4) ----------------------------------------------------
     gnn: bool = False
@@ -106,6 +127,7 @@ class DetectorConfig:
             "llm_backend": {"openrouter", "mock"},
             "enforcement": {"active", "log_only", "ttl"},
             "kg_backend": {"neo4j", "memory"},
+            "iforest_fit": {"baseline_csv", "warmup"},
         }
         for name, allowed in choices.items():
             value = getattr(self, name)
@@ -181,6 +203,7 @@ class Experiment:
     repetitions: int
     base: dict[str, Any]
     factors: dict[str, dict[str, Any]]
+    requires: dict[str, list[str]]
     factor_order: list[str]
     design: list[str]
     arms: dict[str, dict[str, Any]]
@@ -193,7 +216,12 @@ class Experiment:
     def load(cls, path: str) -> "Experiment":
         with open(path, encoding="utf-8") as fh:
             raw = yaml.safe_load(fh)
-        factors = raw.get("factors") or {}
+        factors = {k: dict(v or {}) for k, v in (raw.get("factors") or {}).items()}
+        requires = {k: list(v.pop("requires", []) or []) for k, v in factors.items()}
+        for f, deps in requires.items():
+            missing = [d for d in deps if d not in factors]
+            if missing:
+                raise ValueError(f"fator {f} requer fatores inexistentes: {missing}")
         return cls(
             name=raw["name"],
             duration_s=float(raw.get("duration_s", 600)),
@@ -201,6 +229,7 @@ class Experiment:
             repetitions=int(raw.get("repetitions", 33)),
             base=raw.get("base") or {},
             factors=factors,
+            requires=requires,
             factor_order=raw.get("factor_order") or list(factors),
             design=raw.get("design") or ["baseline", "isolated", "cumulative", "leave_one_out"],
             arms=raw.get("arms") or {},
@@ -214,7 +243,7 @@ class Experiment:
         from ips.matrix import expand_design
 
         specs = []
-        for name, factor_set in expand_design(self.factor_order, self.design):
+        for name, factor_set in expand_design(self.factor_order, self.design, self.requires):
             merged: dict[str, Any] = copy.deepcopy(self.base)
             for factor in factor_set:
                 merged = deep_merge(merged, self.factors[factor])
@@ -227,6 +256,7 @@ class Experiment:
         env = {k: merged.pop(k) for k in list(merged) if k in ENVIRONMENT_KEYS}
         merged.setdefault("duration_s", self.duration_s + self.warmup_s)
         merged.setdefault("gnn_warmup_s", self.warmup_s)
+        merged.setdefault("iforest_warmup_s", self.warmup_s)
         DetectorConfig.from_dict(merged)  # valida cedo
         return RunSpec(name=name, factors=list(factor_set), detector=merged, environment=env)
 

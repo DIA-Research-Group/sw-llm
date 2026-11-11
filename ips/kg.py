@@ -31,6 +31,8 @@ from collections import Counter, defaultdict
 from typing import Any, Callable
 
 log = logging.getLogger("ips.kg")
+# avisos de "label/relacao inexistente" com o grafo ainda vazio
+logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
 
 TOKEN_PATTERNS = {
     "sqli": re.compile(r"('|%27)\s*(or|and|union)|union(\s|%20|\+)+select|sleep\(|benchmark\(|--(\s|%20|$)", re.I),
@@ -75,7 +77,9 @@ def ua_family(ua: str | None) -> str:
 
 
 def payload_tokens(rec: dict[str, Any]) -> list[str]:
-    text = f"{rec.get('request_uri') or ''} {rec.get('http_user_agent') or ''} {rec.get('http_referrer') or ''}"
+    # "request" (linha crua) so existe com rich_log; cobre URIs rejeitadas pelo Nginx
+    text = (f"{rec.get('request_uri') or ''} {rec.get('request') or ''} "
+            f"{rec.get('http_user_agent') or ''} {rec.get('http_referrer') or ''}")
     return [name for name, pat in TOKEN_PATTERNS.items() if pat.search(text)]
 
 
@@ -105,7 +109,11 @@ def aggregate(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         if ts is not None:
             a["first"] = min(a["first"], ts) if a["first"] is not None else ts
             a["last"] = max(a["last"], ts) if a["last"] is not None else ts
-        a["endpoints"][endpoint_template(r.get("request_uri"))] += 1
+        uri = r.get("request_uri")
+        if not uri and r.get("request"):
+            parts = str(r["request"]).split(" ")
+            uri = parts[1] if len(parts) > 1 else None
+        a["endpoints"][endpoint_template(uri)] += 1
         a["uas"][ua_family(r.get("http_user_agent"))] += 1
         a["statuses"][str(status)] += 1
         a["methods"][r.get("request_method") or "-"] += 1
@@ -114,12 +122,18 @@ def aggregate(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return agg
 
 
-def features_of(profile: dict[str, Any]) -> set[str]:
+def features_of(profile: dict[str, Any], strict: bool = False) -> set[str]:
+    """Conjunto de features do subgrafo de um IP.
+
+    ``strict`` (correcao 4) descarta classe de status e metodo HTTP, que
+    qualquer usuario legitimo tambem exibe e inflavam a similaridade.
+    """
     feats = {f"ep:{e}" for e in profile["endpoints"]}
     feats |= {f"ua:{u}" for u in profile["uas"]}
     feats |= {f"tok:{t}" for t in profile["tokens"]}
-    feats |= {f"st:{status_class(s)}" for s in profile["statuses"]}
-    feats |= {f"m:{m}" for m in profile["methods"]}
+    if not strict:
+        feats |= {f"st:{status_class(s)}" for s in profile["statuses"]}
+        feats |= {f"m:{m}" for m in profile["methods"]}
     return feats
 
 
@@ -131,6 +145,7 @@ class MemoryStore:
     def reset(self) -> None:
         self.ips: dict[str, dict[str, Any]] = {}
         self.sigs: list[dict[str, Any]] = []
+        self.benign: dict[str, dict[str, Any]] = {}
 
     def ingest(self, agg: dict[str, dict[str, Any]]) -> None:
         for ip, a in agg.items():
@@ -164,6 +179,12 @@ class MemoryStore:
 
     def signatures(self) -> list[dict[str, Any]]:
         return list(self.sigs)
+
+    def set_benign(self, ip: str, features: set[str], now: float) -> None:
+        self.benign[ip] = {"ip": ip, "features": set(features), "created": now}
+
+    def benign_profiles(self) -> list[dict[str, Any]]:
+        return list(self.benign.values())
 
     def profiles(self) -> list[dict[str, Any]]:
         return list(self.ips.values())
@@ -252,6 +273,20 @@ class Neo4jStore:
             **{**sig, "features": sorted(sig["features"])},
         )
 
+    def set_benign(self, ip: str, features: set[str], now: float) -> None:
+        """Memoria negativa: ultimo perfil do IP julgado benigno pelo LLM."""
+        self._run(
+            """MERGE (i:IP {addr: $ip})
+               MERGE (b:BenignProfile {ip: $ip})
+               SET b.features = $features, b.created = $now
+               MERGE (b)-[:OF]->(i)""",
+            ip=ip, features=sorted(features), now=now,
+        )
+
+    def benign_profiles(self) -> list[dict[str, Any]]:
+        rows = self._run("MATCH (b:BenignProfile) RETURN b")
+        return [{**r["b"], "features": set(r["b"]["features"])} for r in rows]
+
     def signatures(self) -> list[dict[str, Any]]:
         rows = self._run("MATCH (s:Signature)-[:DERIVED_FROM]->(i:IP) RETURN s, i.addr AS ip")
         return [{**r["s"], "ip": r["ip"], "features": set(r["s"]["features"])} for r in rows]
@@ -287,7 +322,9 @@ class KnowledgeGraph:
     def __init__(self, store, cfg):
         self.store = store
         self.cfg = cfg
+        self.strict = bool(getattr(cfg, "kg_strict", False))
         self.hunted: dict[str, int] = {}
+        self.no_shortcut: set[str] = set()  # IPs ja decididos pelo atalho (proxima palavra e do LLM)
 
     @classmethod
     def create(cls, cfg) -> "KnowledgeGraph":
@@ -300,6 +337,7 @@ class KnowledgeGraph:
     def reset(self) -> None:
         self.store.reset()
         self.hunted.clear()
+        self.no_shortcut.clear()
 
     # Fase 1 ------------------------------------------------------------------
     def ingest(self, records: list[dict[str, Any]]) -> None:
@@ -313,10 +351,10 @@ class KnowledgeGraph:
     # Fase 2 ------------------------------------------------------------------
     def feedback(self, ip: str, decision, context: list[dict[str, Any]], now: float) -> None:
         profile = next((p for p in self.store.profiles() if p["remote_addr"] == ip), None)
-        feats = features_of(profile) if profile else set()
+        feats = features_of(profile, self.strict) if profile else set()
         own = [r for r in context if r.get("remote_addr") == ip and r.get("kind", "http") == "http"]
         if own:
-            feats |= features_of({**aggregate(own)[ip]})
+            feats |= features_of({**aggregate(own)[ip]}, self.strict)
         if not feats:
             return
         self.store.add_signature({
@@ -325,20 +363,42 @@ class KnowledgeGraph:
             "explanation": getattr(decision, "explanation", None), "features": feats,
         })
 
+    def benign_feedback(self, window: list[dict[str, Any]], now: float) -> None:
+        """Correcao 4 (memoria negativa): o LLM julgou a janela benigna, entao o
+        perfil atual de cada IP dela vira referencia do que *nao* e ataque."""
+        if not self.strict:
+            return
+        ips = {r.get("remote_addr") for r in window if r.get("kind", "http") == "http" and r.get("remote_addr")}
+        profiles = {p["remote_addr"]: p for p in self.store.profiles()}
+        for ip in ips:
+            if ip in profiles:
+                self.store.set_benign(ip, features_of(profiles[ip], True), now)
+
+    def forbid_shortcut(self, ip: str) -> None:
+        self.no_shortcut.add(ip)
+
     # Fase 3 ------------------------------------------------------------------
     def _idf(self, profiles: list[dict[str, Any]]) -> Callable[[str], float]:
         df: Counter[str] = Counter()
         for p in profiles:
-            df.update(features_of(p))
+            df.update(features_of(p, self.strict))
         n = max(len(profiles), 1)
-        return lambda f: math.log(1 + n / (1 + df.get(f, 0))) + (1.0 if f.startswith("tok:") else 0.0)
+        common = self.cfg.kg_common_feature_ratio if self.strict else None
+
+        def weight(f: str) -> float:
+            # strict: features presentes na maioria dos IPs nao discriminam nada
+            if common is not None and n >= 3 and df.get(f, 0) / n > common and not f.startswith("tok:"):
+                return 0.0
+            return math.log(1 + n / (1 + df.get(f, 0))) + (1.0 if f.startswith("tok:") else 0.0)
+
+        return weight
 
     @staticmethod
     def weighted_jaccard(a: set[str], b: set[str], w: Callable[[str], float]) -> float:
-        union = a | b
-        if not union:
+        denom = sum(w(f) for f in a | b)
+        if denom <= 0:
             return 0.0
-        return sum(w(f) for f in a & b) / sum(w(f) for f in union)
+        return sum(w(f) for f in a & b) / denom
 
     def match_window(self, window: list[dict[str, Any]], exclude: Callable[[str], bool]) -> tuple[str, float] | None:
         sigs = self.store.signatures()
@@ -347,12 +407,17 @@ class KnowledgeGraph:
         counts = Counter(r.get("remote_addr") for r in window if r.get("kind", "http") == "http")
         profiles = {p["remote_addr"]: p for p in self.store.profiles()}
         w = self._idf(list(profiles.values()))
+        benign = self.store.benign_profiles() if self.strict else []
         best: tuple[str, float] | None = None
         for ip, _ in counts.most_common():
-            if not ip or exclude(ip) or ip not in profiles:
+            if not ip or exclude(ip) or ip not in profiles or ip in self.no_shortcut:
                 continue
-            feats = features_of(profiles[ip])
+            feats = features_of(profiles[ip], self.strict)
             sim = max(self.weighted_jaccard(feats, s["features"], w) for s in sigs)
+            if benign:
+                sim_b = max(self.weighted_jaccard(feats, b["features"], w) for b in benign)
+                if sim - sim_b < self.cfg.kg_margin:
+                    continue
             if sim >= self.cfg.kg_similarity_threshold and (best is None or sim > best[1]):
                 best = (ip, sim)
         return best
