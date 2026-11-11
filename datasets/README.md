@@ -9,16 +9,25 @@ parameter tampering...). Usado pelo cenario `csic`, que reenvia as requisicoes
 pelo proxy real para que o Nginx gere `request_time`, `status` e
 `body_bytes_sent` (ausentes no dataset).
 
-Download (Kaggle, requer conta e `~/.kaggle/kaggle.json`):
+Download e verificacao (recomendado):
 
 ```bash
-pip install kaggle
-kaggle datasets download -d ispangler/csic-2010-web-application-attacks -p datasets/csic2010 --unzip
+datasets/fetch_csic.sh                    # via Kaggle CLI (precisa de ~/.kaggle/kaggle.json)
+datasets/fetch_csic.sh /caminho/arquivos  # ou a partir de arquivos ja baixados
 ```
 
-Resultado esperado: `datasets/csic2010/*.csv` com as colunas `Method`,
-`User-Agent`, `URL`, `content` e `classification` (0 = normal, 1 = anomala).
-O leitor (`docker/traffic/csic_replay.py`) tambem aceita `label`/`Class`.
+Na primeira execucao o script grava `datasets/csic2010.sha256` (versione esse
+arquivo); nas seguintes confere os arquivos e falha se algo divergir. Cada
+execucao do cenario `csic` registra o SHA-256 dos arquivos usados em
+`run.json` (`datasets`), e o runner se recusa a rodar sem o dataset.
+
+Formatos aceitos pelo leitor (`docker/traffic/csic_replay.py`):
+
+* CSV do Kaggle, com as colunas `Method`, `User-Agent`, `URL`, `content` e
+  `classification` (0 = normal, 1 = anomala); tambem aceita `label`/`Class`;
+* `.txt` originais (`normalTrafficTraining.txt`, `normalTrafficTest.txt`,
+  `anomalousTrafficTest.txt`): requisicoes HTTP cruas, rotulo inferido pelo
+  nome do arquivo (`anomalous` = ataque).
 
 ## Por que nao CIC-IDS 2017, LogHub ou BCCC
 
