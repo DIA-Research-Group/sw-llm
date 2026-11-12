@@ -1,0 +1,3 @@
+# Configuracao usada quando o servico "detector" e iniciado manualmente
+# (docker compose --profile detector up). Campos: ips/config.py::DetectorConfig
+output_dir: runs/manual

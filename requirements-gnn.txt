@@ -1,0 +1,3 @@
+# #13 fase 4 (GNN). Instalar a variante CPU:
+#   pip install -r requirements-gnn.txt --index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1

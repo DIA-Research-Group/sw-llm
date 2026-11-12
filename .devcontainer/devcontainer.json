@@ -1,7 +1,7 @@
 {
   "name": "Live Fire Lab - Cibersegurança",
   "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
-  "runArgs": ["--network=live-fire-lab_live_fire_network"],
+  "runArgs": ["--network=ips-lab_live_fire_network"],
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {"moby": false}
   },

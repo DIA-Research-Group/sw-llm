@@ -1,0 +1,61 @@
+# Piloto com o modelo real: mesma matriz do ablation.yaml, janela curta e 2
+# repeticoes. Uso tipico: gravar o trafego em shadow e rodar o replay.
+#
+#   python -m ips.run experiments/pilot.yaml --only baseline,+shadow --scenarios zap,slowloris,vulhub
+#   python -m ips.replay experiments/ablation-replay.yaml --traffic runs/pilot/+shadow --reps 2 --out runs/pilot-replay   # -> runs/pilot-replay/ablation-replay
+
+name: pilot
+duration_s: 300        # piloto: janela curta
+warmup_s: 60           # so trafego benigno; calibra a GNN antes do ataque
+repetitions: 2         # piloto (impar/par permite ips.calibrate)
+seed: 42               # ordem embaralhada das execucoes
+
+# Aplicado a todas as configuracoes (instrumentacao, nao e fator).
+base:
+  model: openai/gpt-4o-mini-2024-07-18   # #15: versao fixa do modelo
+  llm_backend: openrouter
+
+factor_order: [shadow, l1fit, explain, richlog, redis, conn, kg, kgsafe, gnn]
+factors:
+  shadow:    # #18 – nao bloqueia, so registra o IP que seria bloqueado
+    enforcement: log_only
+  l1fit:     # correcao: iForest treinado no aquecimento + limiar por quantil
+    iforest_fit: warmup
+    iforest_threshold_quantile: 0.01
+  explain:   # #15 – justificativa (XAI) antes da decisao
+    explain: true
+  richlog:   # correcao: LLM/KG veem request crua, Host e tamanho (ex.: URI rejeitada pelo Nginx)
+    rich_log: true
+  redis:     # #21 – buffer de logs em RAM no lugar do Elasticsearch
+    log_buffer: redis
+  conn:      # #17 – telemetria de conexoes abertas (Slowloris)
+    conn_telemetry: true
+  kg:        # #13 fases 1-3 – knowledge graph, feedback e threat hunting
+    knowledge_graph: true
+  kgsafe:    # correcao: features discriminativas, memoria negativa, bloqueio provisorio
+    requires: [kg]
+    kg_strict: true
+  gnn:       # #13 fase 4 – autoencoder de grafo (DOMINANT) em OU com o iForest
+    gnn: true
+
+design: [baseline, isolated, cumulative, leave_one_out]
+
+arms:
+  llm_only:          # LLM puro ("forca bruta"): todo lote vai ao modelo
+    layer1: none
+    enforcement: log_only
+  crs_pl1:           # #19 – ModSecurity + OWASP CRS, paranoia 1
+    proxy: crs
+    crs_paranoia: 1
+    pipeline: observe
+  crs_pl2:           # #19 – paranoia 2
+    proxy: crs
+    crs_paranoia: 2
+    pipeline: observe
+
+scenarios: [zap, slowloris, vulhub, csic]
+
+# #21: limites opcionais por servico (docker compose deploy.resources.limits)
+# resources:
+#   elasticsearch: {cpus: "1.0", memory: 2g}
+#   detector: {cpus: "1.0", memory: 1g}

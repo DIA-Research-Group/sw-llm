@@ -23,3 +23,11 @@ __pycache__/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+# Experimentos e datasets externos
+runs/
+datasets/*
+!datasets/README.md
+.venv/
+.pytest_cache/
+!datasets/fetch_csic.sh
+!datasets/*.sha256
