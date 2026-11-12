@@ -222,3 +222,27 @@ def test_account_error_aborts(monkeypatch):
     analyst = layer2.LLMAnalyst(DetectorConfig(llm_backend="openrouter"))
     with pytest.raises(layer2.LLMAccountError):
         analyst.analyze([{"remote_addr": "1.2.3.4"}])
+
+
+def test_connection_error_retries(monkeypatch):
+    """Falha de rede transitoria e repetida antes de virar janela com erro."""
+    from ips import layer2
+    from ips.config import DetectorConfig
+
+    calls = {"n": 0}
+
+    class Resp:
+        status_code = 500
+        text = "x"
+
+    def post(*a, **k):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise layer2.requests.ConnectionError("dns")
+        return Resp()
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "x")
+    monkeypatch.setattr(layer2.requests, "post", post)
+    monkeypatch.setattr(layer2.time, "sleep", lambda s: None)
+    d = layer2.LLMAnalyst(DetectorConfig(llm_backend="openrouter")).analyze([{"remote_addr": "1.2.3.4"}])
+    assert calls["n"] == 3 and d.status == "http_error"

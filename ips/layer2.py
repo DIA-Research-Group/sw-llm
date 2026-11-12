@@ -117,10 +117,19 @@ class LLMAnalyst:
             return self._mock(context, payload)
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         start = time.time()
-        try:
-            resp = requests.post(self.cfg.llm_base_url, headers=headers, json=payload, timeout=self.cfg.llm_timeout_s)
-        except requests.RequestException as exc:
-            return Decision(status="error", latency_s=round(time.time() - start, 2), error=str(exc))
+        resp = None
+        for attempt in range(3):
+            try:
+                resp = requests.post(self.cfg.llm_base_url, headers=headers, json=payload,
+                                     timeout=self.cfg.llm_timeout_s)
+                break
+            except requests.ConnectionError as exc:
+                # falha de rede/DNS transitoria (ex.: maquina saindo de suspensao): tenta de novo
+                if attempt == 2:
+                    return Decision(status="error", latency_s=round(time.time() - start, 2), error=str(exc))
+                time.sleep(5 * (attempt + 1))
+            except requests.RequestException as exc:
+                return Decision(status="error", latency_s=round(time.time() - start, 2), error=str(exc))
         latency = round(time.time() - start, 2)
         if resp.status_code in (401, 402, 403):
             raise LLMAccountError(f"{resp.status_code}: {resp.text[:300]}")
